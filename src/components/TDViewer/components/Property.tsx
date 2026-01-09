@@ -11,7 +11,7 @@
  * SPDX-License-Identifier: EPL-2.0 OR W3C-20150513
  ********************************************************************************/
 import React, { useContext, useState, useRef } from "react";
-import { Trash2 } from "react-feather";
+import { Trash2, Copy } from "react-feather";
 import ediTDorContext from "../../../context/ediTDorContext";
 import {
   buildAttributeListObject,
@@ -39,9 +39,9 @@ interface IProperty {
   };
   propName: string;
 }
+
 const Property: React.FC<IProperty> = (props) => {
   const context = useContext(ediTDorContext);
-
   const [isExpanded, setIsExpanded] = useState(false);
 
   const addFormDialog = useRef<{ openModal: () => void }>(null);
@@ -62,29 +62,55 @@ const Property: React.FC<IProperty> = (props) => {
 
   const property = props.prop;
 
-  let forms: {
-    href: string;
-    op: string;
-    contentType: string;
-    actualIndex: number;
-    [key: string]: any;
-  }[] = separateForms(structuredClone(props.prop.forms));
+  const forms = separateForms(structuredClone(props.prop.forms));
 
   const attributeListObject = buildAttributeListObject(
     { name: props.propName },
     props.prop,
     alreadyRenderedKeys
   );
-  const attributes = Object.keys(attributeListObject).map((x) => {
-    return (
-      <li key={x}>
-        {x} : {JSON.stringify(attributeListObject[x])}
-      </li>
-    );
-  });
+
+  const attributes = Object.keys(attributeListObject).map((x) => (
+    <li key={x}>
+      {x} : {JSON.stringify(attributeListObject[x])}
+    </li>
+  ));
 
   const handleDeletePropertyClicked = () => {
     context.removeOneOfAKindReducer("properties", props.propName);
+  };
+
+  const handleCopyProperty = () => {
+    const parsedTD = context.parsedTD;
+
+    if (!parsedTD || !parsedTD.properties) {
+      console.error("parsedTD or properties missing", parsedTD);
+      return;
+    }
+
+    const originalName = props.propName;
+
+    let newName = `${originalName}_copy`;
+    let counter = 1;
+
+    while (parsedTD.properties[newName]) {
+      newName = `${originalName}_copy_${counter++}`;
+    }
+
+    const copiedProperty = structuredClone(property);
+
+    const baseTitle = property.title ?? props.propName;
+    copiedProperty.title = `${baseTitle} copy`;
+
+    const updatedParsedTD = {
+      ...parsedTD,
+      properties: {
+        ...parsedTD.properties,
+        [newName]: copiedProperty,
+      },
+    };
+
+    context.updateOfflineTD(JSON.stringify(updatedParsedTD, null, 2));
   };
 
   return (
@@ -94,16 +120,39 @@ const Property: React.FC<IProperty> = (props) => {
       onToggle={() => setIsExpanded(!isExpanded)}
     >
       <summary
-        className={`flex cursor-pointer items-center rounded-t-lg pl-2 text-xl font-bold text-white ${isExpanded ? "bg-gray-500" : ""}`}
+        className={`flex cursor-pointer items-center rounded-t-lg pl-2 text-xl font-bold text-white ${
+          isExpanded ? "bg-gray-500" : ""
+        }`}
       >
-        <h3 className="flex-grow px-2">{property.title ?? props.propName}</h3>
+        <h3 className="flex-grow px-2">
+          {property.title ?? props.propName}
+        </h3>
+
         {isExpanded && (
-          <button
-            className="flex h-10 w-10 items-center justify-center self-stretch rounded-bl-md rounded-tr-md bg-gray-400 text-base"
-            onClick={handleDeletePropertyClicked}
-          >
-            <Trash2 size={16} color="white" />
-          </button>
+          <>
+            <button
+              className="flex h-10 w-10 items-center justify-center self-stretch bg-gray-400 text-base"
+              title="Copy property"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleCopyProperty();
+              }}
+            >
+              <Copy size={16} color="white" />
+            </button>
+            <button
+              className="flex h-10 w-10 items-center justify-center self-stretch rounded-bl-md rounded-tr-md bg-gray-400 text-base"
+              title="Delete property"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleDeletePropertyClicked();
+              }}
+            >
+              <Trash2 size={16} color="white" />
+            </button>
+          </>
         )}
       </summary>
 
@@ -113,7 +162,10 @@ const Property: React.FC<IProperty> = (props) => {
             {property.description}
           </div>
         )}
-        <ul className="list-disc pl-6 text-base text-gray-300">{attributes}</ul>
+
+        <ul className="list-disc pl-6 text-base text-gray-300">
+          {attributes}
+        </ul>
 
         <div className="flex items-center justify-start pb-2 pt-2">
           <InfoIconWrapper tooltip={getFormsTooltipContent()} id="properties">
@@ -123,7 +175,7 @@ const Property: React.FC<IProperty> = (props) => {
 
         <AddFormElement onClick={handleOpenAddFormDialog} />
         <AddFormDialog
-          type={"property"}
+          type="property"
           interaction={property}
           interactionName={props.propName}
           ref={addFormDialog}
@@ -134,7 +186,7 @@ const Property: React.FC<IProperty> = (props) => {
             key={`${i}-${form.href}`}
             propName={props.propName}
             form={form}
-            interactionType={"property"}
+            interactionType="property"
           />
         ))}
       </div>

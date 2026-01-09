@@ -11,7 +11,7 @@
  * SPDX-License-Identifier: EPL-2.0 OR W3C-20150513
  ********************************************************************************/
 import React, { useContext, useState } from "react";
-import { Trash2 } from "react-feather";
+import { Trash2, Copy } from "react-feather";
 import ediTDorContext from "../../../context/ediTDorContext";
 import {
   buildAttributeListObject,
@@ -27,10 +27,9 @@ const alreadyRenderedKeys = ["title", "forms", "description"];
 
 const Action: React.FC<any> = (props) => {
   const context = useContext(ediTDorContext);
-
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const addFormDialog = React.useRef();
+  const addFormDialog = React.useRef<any>();
   const handleOpenAddFormDialog = () => {
     addFormDialog.current.openModal();
   };
@@ -54,18 +53,43 @@ const Action: React.FC<any> = (props) => {
     props.action,
     alreadyRenderedKeys
   );
-  const attributes = Object.keys(attributeListObject).map((x) => {
-    return (
-      <li key={x}>
-        {x} : {JSON.stringify(attributeListObject[x])}
-      </li>
-    );
-  });
+
+  const attributes = Object.keys(attributeListObject).map((x) => (
+    <li key={x}>
+      {x} : {JSON.stringify(attributeListObject[x])}
+    </li>
+  ));
 
   const handleDeleteAction = () => {
     context.removeOneOfAKindReducer("actions", props.actionName);
   };
 
+  const handleCopyAction = () => {
+    const parsedTD = context.parsedTD;
+    if (!parsedTD || !parsedTD.actions) {
+      console.error("parsedTD or actions missing", parsedTD);
+      return;
+    }
+    const originalName = props.actionName;
+    let newName = `${originalName}_copy`;
+    let counter = 1;
+    while (parsedTD.actions[newName]) {
+      newName = `${originalName}_copy_${counter++}`;
+    }
+    const copiedAction = structuredClone(action);
+    if (copiedAction.title) {
+      copiedAction.title = `${copiedAction.title} copy`;
+    }
+    const updatedParsedTD = {
+      ...parsedTD,
+      actions: {
+        ...parsedTD.actions,
+        [newName]: copiedAction,
+      },
+    };
+    context.updateOfflineTD(JSON.stringify(updatedParsedTD, null, 2));
+  };
+  
   return (
     <details
       className="mb-1"
@@ -73,17 +97,42 @@ const Action: React.FC<any> = (props) => {
       onToggle={() => setIsExpanded(!isExpanded)}
     >
       <summary
-        className={`flex cursor-pointer items-center rounded-t-lg pl-2 text-xl font-bold text-white ${isExpanded ? "bg-gray-500" : ""}`}
+        className={`flex cursor-pointer items-center rounded-t-lg pl-2 text-xl font-bold text-white ${
+          isExpanded ? "bg-gray-500" : ""
+        }`}
       >
-        <h3 className="flex-grow px-2">{action.title ?? props.actionName}</h3>
+        <h3 className="flex-grow px-2">
+          {action.title ?? props.actionName}
+        </h3>
+
         {isExpanded && (
-          <button
-            className="flex h-10 w-10 items-center justify-center self-stretch rounded-bl-md rounded-tr-md bg-gray-400 text-base"
-            onClick={handleDeleteAction}
-          >
-            <Trash2 size={16} color="white" />
-          </button>
-        )}
+  <>
+    <button
+      className="flex h-10 w-10 items-center justify-center self-stretch bg-gray-400 text-base"
+      title="Copy action"
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        handleCopyAction();
+      }}
+    >
+      <Copy size={16} color="white" />
+    </button>
+
+    <button
+      className="flex h-10 w-10 items-center justify-center self-stretch rounded-bl-md rounded-tr-md bg-gray-400 text-base"
+      title="Delete action"
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        handleDeleteAction();
+      }}
+    >
+      <Trash2 size={16} color="white" />
+    </button>
+  </>
+)}
+
       </summary>
 
       <div className="mb-4 rounded-b-lg bg-gray-500 px-2 pb-4">
@@ -92,7 +141,10 @@ const Action: React.FC<any> = (props) => {
             {action.description}
           </div>
         )}
-        <ul className="list-disc pl-6 text-base text-gray-300">{attributes}</ul>
+
+        <ul className="list-disc pl-6 text-base text-gray-300">
+          {attributes}
+        </ul>
 
         <div className="flex items-center justify-start pb-2 pt-2">
           <InfoIconWrapper
@@ -105,19 +157,21 @@ const Action: React.FC<any> = (props) => {
         </div>
 
         <AddFormElement onClick={handleOpenAddFormDialog} />
+
         <AddFormDialog
-          type={"action"}
+          type="action"
           interaction={action}
           interactionName={props.actionName}
           ref={addFormDialog}
         />
+
         {forms.map((form, i) => (
           <Form
             key={`${i}-${form.href}`}
             form={form}
             propName={props.actionName}
-            interactionType={"action"}
-          ></Form>
+            interactionType="action"
+          />
         ))}
       </div>
     </details>
