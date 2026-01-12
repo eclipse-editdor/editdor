@@ -22,6 +22,7 @@ import { getFormsTooltipContent } from "../../../utils/TooltipMapper";
 import Form from "./Form";
 import AddFormDialog from "../../Dialogs/AddFormDialog";
 import AddFormElement from "../base/AddFormElement";
+import { copyAffordance } from "../../../utils/copyAffordance";
 
 const alreadyRenderedKeys = ["title", "forms", "description"];
 
@@ -61,7 +62,6 @@ const Property: React.FC<IProperty> = (props) => {
   }
 
   const property = props.prop;
-
   const forms = separateForms(structuredClone(props.prop.forms));
 
   const attributeListObject = buildAttributeListObject(
@@ -81,40 +81,31 @@ const Property: React.FC<IProperty> = (props) => {
   };
 
   const handleCopyProperty = () => {
-    const parsedTD = context.parsedTD;
+    try {
+      const { updatedTD, newName } = copyAffordance({
+        parsedTD: context.parsedTD,
+        section: "properties",
+        originalName: props.propName,
+        affordance: property,
+      });
 
-    if (!parsedTD || !parsedTD.properties) {
-      console.error("parsedTD or properties missing", parsedTD);
-      return;
+      context.updateOfflineTD(JSON.stringify(updatedTD, null, 2));
+
+      setIsExpanded(true);
+
+      setTimeout(() => {
+        document
+          .getElementById(`property-${newName}`)
+          ?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 100);
+    } catch (e) {
+      console.error(e);
     }
-
-    const originalName = props.propName;
-
-    let newName = `${originalName}_copy`;
-    let counter = 1;
-
-    while (parsedTD.properties[newName]) {
-      newName = `${originalName}_copy_${counter++}`;
-    }
-
-    const copiedProperty = structuredClone(property);
-
-    const baseTitle = property.title ?? props.propName;
-    copiedProperty.title = `${baseTitle} copy`;
-
-    const updatedParsedTD = {
-      ...parsedTD,
-      properties: {
-        ...parsedTD.properties,
-        [newName]: copiedProperty,
-      },
-    };
-
-    context.updateOfflineTD(JSON.stringify(updatedParsedTD, null, 2));
   };
 
   return (
     <details
+      id={`property-${props.propName}`}
       className="mb-1"
       open={isExpanded}
       onToggle={() => setIsExpanded(!isExpanded)}
@@ -130,6 +121,7 @@ const Property: React.FC<IProperty> = (props) => {
 
         {isExpanded && (
           <>
+            {/* COPY BUTTON */}
             <button
               className="flex h-10 w-10 items-center justify-center self-stretch bg-gray-400 text-base"
               title="Copy property"
@@ -141,6 +133,8 @@ const Property: React.FC<IProperty> = (props) => {
             >
               <Copy size={16} color="white" />
             </button>
+
+            {/* DELETE BUTTON */}
             <button
               className="flex h-10 w-10 items-center justify-center self-stretch rounded-bl-md rounded-tr-md bg-gray-400 text-base"
               title="Delete property"
