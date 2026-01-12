@@ -22,6 +22,7 @@ import InfoIconWrapper from "../../base/InfoIconWrapper";
 import { getFormsTooltipContent } from "../../../utils/TooltipMapper";
 import Form from "./Form";
 import AddFormElement from "../base/AddFormElement";
+import { copyAffordance } from "../../../utils/copyAffordance";
 
 const alreadyRenderedKeys = ["title", "forms", "description"];
 
@@ -31,7 +32,7 @@ const Action: React.FC<any> = (props) => {
 
   const addFormDialog = React.useRef<any>();
   const handleOpenAddFormDialog = () => {
-    addFormDialog.current.openModal();
+    addFormDialog.current?.openModal();
   };
 
   if (
@@ -64,34 +65,33 @@ const Action: React.FC<any> = (props) => {
     context.removeOneOfAKindReducer("actions", props.actionName);
   };
 
+
   const handleCopyAction = () => {
-    const parsedTD = context.parsedTD;
-    if (!parsedTD || !parsedTD.actions) {
-      console.error("parsedTD or actions missing", parsedTD);
-      return;
+    try {
+      const { updatedTD, newName } = copyAffordance({
+        parsedTD: context.parsedTD,
+        section: "actions",
+        originalName: props.actionName,
+        affordance: action,
+      });
+
+      context.updateOfflineTD(JSON.stringify(updatedTD, null, 2));
+
+      setIsExpanded(true);
+
+      setTimeout(() => {
+        document
+          .getElementById(`action-${newName}`)
+          ?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 100);
+    } catch (e) {
+      console.error(e);
     }
-    const originalName = props.actionName;
-    let newName = `${originalName}_copy`;
-    let counter = 1;
-    while (parsedTD.actions[newName]) {
-      newName = `${originalName}_copy_${counter++}`;
-    }
-    const copiedAction = structuredClone(action);
-    if (copiedAction.title) {
-      copiedAction.title = `${copiedAction.title} copy`;
-    }
-    const updatedParsedTD = {
-      ...parsedTD,
-      actions: {
-        ...parsedTD.actions,
-        [newName]: copiedAction,
-      },
-    };
-    context.updateOfflineTD(JSON.stringify(updatedParsedTD, null, 2));
   };
-  
+
   return (
     <details
+      id={`action-${props.actionName}`}
       className="mb-1"
       open={isExpanded}
       onToggle={() => setIsExpanded(!isExpanded)}
@@ -106,33 +106,32 @@ const Action: React.FC<any> = (props) => {
         </h3>
 
         {isExpanded && (
-  <>
-    <button
-      className="flex h-10 w-10 items-center justify-center self-stretch bg-gray-400 text-base"
-      title="Copy action"
-      onClick={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        handleCopyAction();
-      }}
-    >
-      <Copy size={16} color="white" />
-    </button>
+          <>
+            <button
+              className="flex h-10 w-10 items-center justify-center self-stretch bg-gray-400 text-base"
+              title="Copy action"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleCopyAction();
+              }}
+            >
+              <Copy size={16} color="white" />
+            </button>
 
-    <button
-      className="flex h-10 w-10 items-center justify-center self-stretch rounded-bl-md rounded-tr-md bg-gray-400 text-base"
-      title="Delete action"
-      onClick={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        handleDeleteAction();
-      }}
-    >
-      <Trash2 size={16} color="white" />
-    </button>
-  </>
-)}
-
+            <button
+              className="flex h-10 w-10 items-center justify-center self-stretch rounded-bl-md rounded-tr-md bg-gray-400 text-base"
+              title="Delete action"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleDeleteAction();
+              }}
+            >
+              <Trash2 size={16} color="white" />
+            </button>
+          </>
+        )}
       </summary>
 
       <div className="mb-4 rounded-b-lg bg-gray-500 px-2 pb-4">

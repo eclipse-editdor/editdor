@@ -22,6 +22,7 @@ import InfoIconWrapper from "../../base/InfoIconWrapper";
 import { getFormsTooltipContent } from "../../../utils/TooltipMapper";
 import Form from "./Form";
 import AddFormElement from "../base/AddFormElement";
+import { copyAffordance } from "../../../utils/copyAffordance";
 
 const alreadyRenderedKeys = ["title", "forms", "description"];
 
@@ -59,38 +60,37 @@ const Event: React.FC<any> = (props) => {
       {x} : {JSON.stringify(attributeListObject[x])}
     </li>
   ));
-  
+
   const handleDeleteEventClicked = () => {
     context.removeOneOfAKindReducer("events", props.eventName);
   };
-  const handleCopyEvent = () => {
-    const parsedTD = context.parsedTD;
-    if (!parsedTD || !parsedTD.events) {
-      console.error("parsedTD or events missing", parsedTD);
-      return;
-    }
-    const originalName = props.eventName;
-    let newName = `${originalName}_copy`;
-    let counter = 1;
-    while (parsedTD.events[newName]) {
-      newName = `${originalName}_copy_${counter++}`;
-    }
-    const copiedEvent = structuredClone(event);
-    const baseTitle = event.title ?? props.eventName;
-    copiedEvent.title = `${baseTitle} copy`;
-    const updatedParsedTD = {
-      ...parsedTD,
-      events: {
-        ...parsedTD.events,
-        [newName]: copiedEvent,
-      },
-    };
 
-    context.updateOfflineTD(JSON.stringify(updatedParsedTD, null, 2));
+  const handleCopyEvent = () => {
+    try {
+      const { updatedTD, newName } = copyAffordance({
+        parsedTD: context.parsedTD,
+        section: "events",
+        originalName: props.eventName,
+        affordance: event,
+      });
+
+      context.updateOfflineTD(JSON.stringify(updatedTD, null, 2));
+
+      setIsExpanded(true);
+
+      setTimeout(() => {
+        document
+          .getElementById(`event-${newName}`)
+          ?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 100);
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   return (
     <details
+      id={`event-${props.eventName}`}
       className="mb-1"
       open={isExpanded}
       onToggle={() => setIsExpanded(!isExpanded)}
@@ -106,6 +106,7 @@ const Event: React.FC<any> = (props) => {
 
         {isExpanded && (
           <>
+            {/* COPY BUTTON */}
             <button
               className="flex h-10 w-10 items-center justify-center self-stretch bg-gray-400 text-base"
               title="Copy event"
@@ -117,6 +118,8 @@ const Event: React.FC<any> = (props) => {
             >
               <Copy size={16} color="white" />
             </button>
+
+            {/* DELETE BUTTON */}
             <button
               className="flex h-10 w-10 items-center justify-center self-stretch rounded-bl-md rounded-tr-md bg-gray-400 text-base"
               title="Delete event"
@@ -138,6 +141,7 @@ const Event: React.FC<any> = (props) => {
             {event.description}
           </div>
         )}
+
         <ul className="list-disc pl-6 text-base text-gray-300">
           {attributes}
         </ul>
@@ -151,6 +155,7 @@ const Event: React.FC<any> = (props) => {
             <h4 className="pr-1 text-lg font-bold text-white">Forms</h4>
           </InfoIconWrapper>
         </div>
+
         <AddFormElement onClick={handleOpenAddFormDialog} />
         <AddFormDialog
           type="event"
@@ -158,6 +163,7 @@ const Event: React.FC<any> = (props) => {
           interactionName={props.eventName}
           ref={addFormDialog}
         />
+
         {forms.map((form, i) => (
           <Form
             key={`${i}-${form.href}`}
