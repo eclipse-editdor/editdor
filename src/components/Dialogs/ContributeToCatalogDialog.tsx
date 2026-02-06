@@ -55,8 +55,8 @@ const VALIDATION_TMC_MANDATORY =
   "https://raw.githubusercontent.com/wot-oss/tmc/main/internal/commands/validate/tmc-mandatory.schema.json";
 const VALIDATION_TM_JSON =
   "https://raw.githubusercontent.com/wot-oss/tmc/main/internal/commands/validate/tm-json-schema-validation.json";
-const VALIDATION_MODBUS =
-  "https://raw.githubusercontent.com/wot-oss/tmc/refs/heads/main/internal/commands/validate/modbus.schema.json";
+const VALIDATION_MODBUS_OLD =
+  "https://raw.githubusercontent.com/wot-oss/tmc/main/internal/commands/validate/modbus-old.schema.json";
 
 const ContributeToCatalogDialog = forwardRef((props, ref) => {
   const context = useContext(ediTDorContext);
@@ -273,14 +273,14 @@ const ContributeToCatalogDialog = forwardRef((props, ref) => {
       let schemaTmJson = await response.json();
       ajv.addSchema(schemaTmJson);
 
-      response = await fetch(VALIDATION_MODBUS);
+      response = await fetch(VALIDATION_MODBUS_OLD);
       if (!response.ok)
-        throw new Error(`Failed to fetch schema from ${VALIDATION_MODBUS}`);
+        throw new Error(`Failed to fetch schema from ${VALIDATION_MODBUS_OLD}`);
       schema = await response.json();
       validate = ajv.compile(schema);
       valid = validate(tdTransformed);
       if (!valid) {
-        let message = `Validation failed for ${VALIDATION_MODBUS}: ${
+        let message = `Validation failed for ${VALIDATION_MODBUS_OLD}: ${  
           validate.errors ? ajv.errorsText(validate.errors) : ""
         }`;
         throw new Error(message);
