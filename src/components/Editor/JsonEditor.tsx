@@ -26,11 +26,14 @@ import { IValidationMessage } from "../../types/context";
 
 type SchemaMapMessage = Map<string, Record<string, unknown>>;
 
-// List of all Options can be found here: https://microsoft.github.io/monaco-editor/docs.html#interfaces/editor.IStandaloneEditorConstructionOptions.html
+// List of all Options can be found here:
+// https://microsoft.github.io/monaco-editor/docs.html#interfaces/editor.IStandaloneEditorConstructionOptions.html
 const editorOptions: editor.IStandaloneEditorConstructionOptions = {
   selectOnLineNumbers: true,
   automaticLayout: true,
   lineDecorationsWidth: 20,
+  tabSize: 2,
+  insertSpaces: true,
 };
 
 // delay function that executes the callback once it hasn't been called for
@@ -86,28 +89,21 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ editorRef }) => {
     const updateMonacoSchemas = (schemaMap: SchemaMapMessage) => {
       proxy.splice(0, proxy.length);
 
-      schemaMap.forEach(function (schema, schemaUri) {
-        console.debug(`using schema: ${schemaUri}`);
-        proxy.push({ schemaUri: schemaUri, schema: schema });
+      schemaMap.forEach((schema, schemaUri) => {
+        proxy.push({ schemaUri, schema });
       });
     };
 
     schemaWorker.onmessage = (ev: MessageEvent<SchemaMapMessage>) => {
-      console.debug("received message from schema worker");
       updateMonacoSchemas(ev.data);
     };
 
     validationWorker.onmessage = (ev: MessageEvent<IValidationMessage>) => {
-      console.debug("received message from validation worker");
-
-      const validationResults: IValidationMessage = ev.data;
-      context.updateValidationMessage(validationResults);
+      context.updateValidationMessage(ev.data);
     };
   }, [schemaWorker, validationWorker, proxy, context]);
 
   useEffect(() => {
-    // check if the offline TD update was triggered by the editor. If not
-    // the editor should not be rerendered.
     if (context.offlineTD !== localTextState) {
       messageWorkers(context.offlineTD);
     }
@@ -124,27 +120,34 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ editorRef }) => {
       return;
     }
 
-    let proxy = new Proxy(schemas, {
-      set: function (
-        target: JsonSchemaEntry[],
-        property: string | symbol,
-        value: JsonSchemaEntry,
-        _
-      ) {
+    // Force Monaco "Format Document" to use 2-space indentation
+    monaco.languages.registerDocumentFormattingEditProvider("json", {
+      provideDocumentFormattingEdits(model) {
+        try {
+          const parsed = JSON.parse(model.getValue());
+          const formatted = JSON.stringify(parsed, null, 2);
+
+          return [
+            {
+              range: model.getFullModelRange(),
+              text: formatted,
+            },
+          ];
+        } catch {
+          return [];
+        }
+      },
+    });
+
+    const proxy = new Proxy(schemas, {
+      set(target: JsonSchemaEntry[], property, value: JsonSchemaEntry) {
         (target as any)[property] = value;
 
-        let jsonSchemaObjects: {
-          fileMatch: string[];
-          uri: any;
-          schema: any;
-        }[] = [];
-        for (let i = 0; i < target.length; i++) {
-          jsonSchemaObjects.push({
-            fileMatch: ["*/*"],
-            uri: target[i].schemaUri,
-            schema: target[i].schema,
-          });
-        }
+        const jsonSchemaObjects = target.map((entry) => ({
+          fileMatch: ["*/*"],
+          uri: entry.schemaUri,
+          schema: entry.schema,
+        }));
 
         monaco.languages.json.jsonDefaults.setDiagnosticsOptions({
           validate: true,
@@ -164,9 +167,8 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ editorRef }) => {
   };
 
   const onChange: OnChange = async (editorText: string | undefined) => {
-    if (!editorText) {
-      return;
-    }
+    if (!editorText) return;
+
     let validate: IValidationMessage = {
       report: {
         json: null,
@@ -200,40 +202,24 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ editorRef }) => {
     try {
       JSON.parse(editorText);
       context.updateOfflineTD(editorText);
-
       context.updateValidationMessage(validate);
     } catch (error) {
-      let message: string =
-        "Invalid JSON: " +
-        (error instanceof Error ? error.message : String(error));
       validate.report.json = "failed";
       context.updateValidationMessage(validate);
       setLocalTextState(editorText);
-      delay(messageWorkers, editorText ?? "", 500);
+      delay(messageWorkers, editorText, 500);
     }
   };
 
   useEffect(() => {
-    if (!context.linkedTd) {
-      return;
-    }
+    if (!context.linkedTd) return;
 
     try {
-      let tabs: JSX.Element[] = [];
-      let index = 0;
-      for (let key in context.linkedTd) {
-        if (
-          context.linkedTd[key]["kind"] === "file" ||
-          Object.keys(context.linkedTd[key]).length
-        ) {
-          tabs.push(
-            <option value={key} key={index}>
-              {key}
-            </option>
-          );
-          index++;
-        }
-      }
+      const tabs = Object.keys(context.linkedTd).map((key, index) => (
+        <option value={key} key={index}>
+          {key}
+        </option>
+      ));
       setTabs(tabs);
     } catch (err) {
       console.debug(err);
@@ -241,7 +227,7 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ editorRef }) => {
   }, [context.linkedTd, context.offlineTD]);
 
   const changeLinkedTd = async () => {
-    let href = (document.getElementById("linkedTd") as HTMLSelectElement).value;
+    const href = (document.getElementById("linkedTd") as HTMLSelectElement).value;
     changeBetweenTd(context, href);
   };
 
@@ -258,10 +244,9 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ editorRef }) => {
       <div className="h-[5%] bg-[#1e1e1e]">
         {context.offlineTD && context.linkedTd && (
           <select
-            name="linkedTd"
             id="linkedTd"
             className="w-[50%] bg-[#1e1e1e] text-white"
-            onChange={() => changeLinkedTd()}
+            onChange={changeLinkedTd}
           >
             {tabs}
           </select>
@@ -270,7 +255,7 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ editorRef }) => {
       <div className="h-[95%] w-full">
         <Editor
           options={editorOptions}
-          theme={"vs-" + "dark"}
+          theme="vs-dark"
           language="json"
           value={context.offlineTD}
           beforeMount={beforeMount}
