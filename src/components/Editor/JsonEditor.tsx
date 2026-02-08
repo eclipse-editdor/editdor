@@ -26,12 +26,14 @@ import { IValidationMessage } from "../../types/context";
 
 type SchemaMapMessage = Map<string, Record<string, unknown>>;
 
-// List of all Options can be found here: https://microsoft.github.io/monaco-editor/docs.html#interfaces/editor.IStandaloneEditorConstructionOptions.html
-const editorOptions: editor.IStandaloneEditorConstructionOptions = {
-  selectOnLineNumbers: true,
-  automaticLayout: true,
-  lineDecorationsWidth: 20,
+type JsonEditorProps = {
+  editorRef?: React.MutableRefObject<editor.IStandaloneCodeEditor | null>;
 };
+
+interface JsonSchemaEntry {
+  schemaUri: string;
+  schema: Record<string, unknown>;
+}
 
 // delay function that executes the callback once it hasn't been called for
 // at least x ms.
@@ -41,16 +43,11 @@ const delay = (fn: (text: string) => void, text: string, ms: number) => {
   timeoutId = setTimeout(() => fn(text), ms);
 };
 
-type JsonEditorProps = {
-  editorRef?: React.MutableRefObject<editor.IStandaloneCodeEditor | null>;
-};
-interface JsonSchemaEntry {
-  schemaUri: string;
-  schema: Record<string, unknown>;
-}
-
 const JsonEditor: React.FC<JsonEditorProps> = ({ editorRef }) => {
   const context = useContext(ediTDorContext);
+
+  // Read indentation from settings (default = 2)
+  const jsonIndentation = context.settings?.jsonIndentation ?? 2;
 
   const [schemas] = useState<JsonSchemaEntry[]>([]);
   const [proxy, setProxy] = useState<any>(undefined);
@@ -66,6 +63,7 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ editorRef }) => {
       ),
     []
   );
+
   const schemaWorker = useMemo<Worker>(
     () =>
       new Worker(new URL("../../workers/schemaWorker.js", import.meta.url), {
@@ -86,32 +84,35 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ editorRef }) => {
     const updateMonacoSchemas = (schemaMap: SchemaMapMessage) => {
       proxy.splice(0, proxy.length);
 
-      schemaMap.forEach(function (schema, schemaUri) {
-        console.debug(`using schema: ${schemaUri}`);
-        proxy.push({ schemaUri: schemaUri, schema: schema });
+      schemaMap.forEach((schema, schemaUri) => {
+        proxy.push({ schemaUri, schema });
       });
     };
 
     schemaWorker.onmessage = (ev: MessageEvent<SchemaMapMessage>) => {
-      console.debug("received message from schema worker");
       updateMonacoSchemas(ev.data);
     };
 
     validationWorker.onmessage = (ev: MessageEvent<IValidationMessage>) => {
-      console.debug("received message from validation worker");
-
-      const validationResults: IValidationMessage = ev.data;
-      context.updateValidationMessage(validationResults);
+      context.updateValidationMessage(ev.data);
     };
   }, [schemaWorker, validationWorker, proxy, context]);
 
   useEffect(() => {
-    // check if the offline TD update was triggered by the editor. If not
-    // the editor should not be rerendered.
     if (context.offlineTD !== localTextState) {
       messageWorkers(context.offlineTD);
     }
   }, [context.offlineTD, messageWorkers, localTextState]);
+
+  // Update Monaco indentation immediately
+  useEffect(() => {
+    if (editorInstance.current) {
+      editorInstance.current.updateOptions({
+        tabSize: jsonIndentation,
+        insertSpaces: true,
+      });
+    }
+  }, [jsonIndentation]);
 
   const editorDidMount = (
     editor: editor.IStandaloneCodeEditor,
@@ -119,32 +120,20 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ editorRef }) => {
   ) => {
     if (!("Proxy" in window)) {
       console.warn(
-        "dynamic fetching of schemas is disabled as your browser doesn't support proxies."
+        "Dynamic fetching of schemas is disabled as your browser doesn't support proxies."
       );
       return;
     }
 
-    let proxy = new Proxy(schemas, {
-      set: function (
-        target: JsonSchemaEntry[],
-        property: string | symbol,
-        value: JsonSchemaEntry,
-        _
-      ) {
+    const proxy = new Proxy(schemas, {
+      set(target: JsonSchemaEntry[], property, value: JsonSchemaEntry) {
         (target as any)[property] = value;
 
-        let jsonSchemaObjects: {
-          fileMatch: string[];
-          uri: any;
-          schema: any;
-        }[] = [];
-        for (let i = 0; i < target.length; i++) {
-          jsonSchemaObjects.push({
-            fileMatch: ["*/*"],
-            uri: target[i].schemaUri,
-            schema: target[i].schema,
-          });
-        }
+        const jsonSchemaObjects = target.map((entry) => ({
+          fileMatch: ["*/*"],
+          uri: entry.schemaUri,
+          schema: entry.schema,
+        }));
 
         monaco.languages.json.jsonDefaults.setDiagnosticsOptions({
           validate: true,
@@ -157,16 +146,22 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ editorRef }) => {
     });
 
     editorInstance.current = editor;
+
     if (editorRef) {
       editorRef.current = editor;
     }
+
+    editor.updateOptions({
+      tabSize: jsonIndentation,
+      insertSpaces: true,
+    });
+
     setProxy(proxy);
   };
 
-  const onChange: OnChange = async (editorText: string | undefined) => {
-    if (!editorText) {
-      return;
-    }
+  const onChange: OnChange = async (editorText) => {
+    if (!editorText) return;
+
     let validate: IValidationMessage = {
       report: {
         json: null,
@@ -197,43 +192,37 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ editorRef }) => {
       },
       customMessage: "",
     };
-    try {
-      JSON.parse(editorText);
-      context.updateOfflineTD(editorText);
 
+    try {
+      const parsed = JSON.parse(editorText);
+
+      // Auto-format JSON using selected indentation
+      const formatted = JSON.stringify(parsed, null, jsonIndentation);
+
+      // Prevent infinite update loop
+      if (formatted !== editorText) {
+        editorInstance.current?.setValue(formatted);
+      }
+
+      context.updateOfflineTD(formatted);
       context.updateValidationMessage(validate);
     } catch (error) {
-      let message: string =
-        "Invalid JSON: " +
-        (error instanceof Error ? error.message : String(error));
       validate.report.json = "failed";
       context.updateValidationMessage(validate);
       setLocalTextState(editorText);
-      delay(messageWorkers, editorText ?? "", 500);
+      delay(messageWorkers, editorText, 500);
     }
   };
 
   useEffect(() => {
-    if (!context.linkedTd) {
-      return;
-    }
+    if (!context.linkedTd) return;
 
     try {
-      let tabs: JSX.Element[] = [];
-      let index = 0;
-      for (let key in context.linkedTd) {
-        if (
-          context.linkedTd[key]["kind"] === "file" ||
-          Object.keys(context.linkedTd[key]).length
-        ) {
-          tabs.push(
-            <option value={key} key={index}>
-              {key}
-            </option>
-          );
-          index++;
-        }
-      }
+      const tabs = Object.keys(context.linkedTd).map((key, index) => (
+        <option value={key} key={index}>
+          {key}
+        </option>
+      ));
       setTabs(tabs);
     } catch (err) {
       console.debug(err);
@@ -241,7 +230,7 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ editorRef }) => {
   }, [context.linkedTd, context.offlineTD]);
 
   const changeLinkedTd = async () => {
-    let href = (document.getElementById("linkedTd") as HTMLSelectElement).value;
+    const href = (document.getElementById("linkedTd") as HTMLSelectElement).value;
     changeBetweenTd(context, href);
   };
 
@@ -258,19 +247,25 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ editorRef }) => {
       <div className="h-[5%] bg-[#1e1e1e]">
         {context.offlineTD && context.linkedTd && (
           <select
-            name="linkedTd"
             id="linkedTd"
             className="w-[50%] bg-[#1e1e1e] text-white"
-            onChange={() => changeLinkedTd()}
+            onChange={changeLinkedTd}
           >
             {tabs}
           </select>
         )}
       </div>
+
       <div className="h-[95%] w-full">
         <Editor
-          options={editorOptions}
-          theme={"vs-" + "dark"}
+          options={{
+            selectOnLineNumbers: true,
+            automaticLayout: true,
+            lineDecorationsWidth: 20,
+            tabSize: jsonIndentation,
+            insertSpaces: true,
+          }}
+          theme="vs-dark"
           language="json"
           value={context.offlineTD}
           beforeMount={beforeMount}

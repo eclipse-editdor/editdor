@@ -19,6 +19,7 @@ export interface SettingsData {
   northboundUrl: string;
   southboundUrl: string;
   pathToValue: string;
+  jsonIndentation: 2 | 4;
 }
 
 export interface SettingsErrors {
@@ -39,6 +40,7 @@ const Settings: React.FC<SettingsProps> = ({
     northboundUrl: "",
     southboundUrl: "",
     pathToValue: "/",
+    jsonIndentation: 2,
   },
   onChange,
   hideTitle = false,
@@ -123,6 +125,14 @@ const Settings: React.FC<SettingsProps> = ({
       } else {
         setErrors((prev) => ({ ...prev, pathToValue: "" }));
       }
+    },
+    []
+  );
+
+  const handleJsonIndentationChange = useCallback(
+    (e: React.ChangeEvent<HTMLSelectElement>) => {
+      const value = Number(e.target.value) as 2 | 4;
+      setData((prev) => ({ ...prev, jsonIndentation: value }));
     },
     []
   );
@@ -230,6 +240,28 @@ const Settings: React.FC<SettingsProps> = ({
               {errors.pathToValue}
             </div>
           )}
+        </div>
+      </div>
+      
+      <div className="my-4 rounded-md bg-black bg-opacity-80 p-2">
+        {!hideTitle && <h1 className="font-bold">JSON Editor</h1>}
+        <div className="px-4">
+          <h2 className="py-2 text-justify text-gray-400">
+            Configure how JSON content is formatted in the editor view.
+          </h2>
+
+          <label className="block text-sm text-gray-300 mb-1">
+            Space indentation
+          </label>
+
+          <select
+            value={data.jsonIndentation}
+            onChange={handleJsonIndentationChange}
+            className="w-full rounded-md border-2 border-gray-600 bg-gray-600 p-2 text-white focus:border-blue-500 focus:outline-none sm:text-sm"
+          >
+            <option value={2}>2 spaces</option>
+            <option value={4}>4 spaces</option>
+          </select>
         </div>
       </div>
     </div>
