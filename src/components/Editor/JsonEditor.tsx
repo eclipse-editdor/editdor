@@ -26,8 +26,7 @@ import { IValidationMessage } from "../../types/context";
 
 type SchemaMapMessage = Map<string, Record<string, unknown>>;
 
-// List of all Options can be found here:
-// https://microsoft.github.io/monaco-editor/docs.html#interfaces/editor.IStandaloneEditorConstructionOptions.html
+// Monaco editor options
 const editorOptions: editor.IStandaloneEditorConstructionOptions = {
   selectOnLineNumbers: true,
   automaticLayout: true,
@@ -35,6 +34,8 @@ const editorOptions: editor.IStandaloneEditorConstructionOptions = {
   tabSize: 2,
   insertSpaces: true,
 };
+// Ensure formatter is registered only once (Monaco is global)
+let jsonFormatterRegistered = false;
 
 // delay function that executes the callback once it hasn't been called for
 // at least x ms.
@@ -86,6 +87,7 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ editorRef }) => {
   );
 
   useEffect(() => {
+    if (!proxy) return;
     const updateMonacoSchemas = (schemaMap: SchemaMapMessage) => {
       proxy.splice(0, proxy.length);
 
@@ -113,31 +115,13 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ editorRef }) => {
     editor: editor.IStandaloneCodeEditor,
     monaco: typeof import("monaco-editor")
   ) => {
+    // Schema fetching requires Proxy support
     if (!("Proxy" in window)) {
       console.warn(
         "dynamic fetching of schemas is disabled as your browser doesn't support proxies."
       );
       return;
     }
-
-    // Force Monaco "Format Document" to use 2-space indentation
-    monaco.languages.registerDocumentFormattingEditProvider("json", {
-      provideDocumentFormattingEdits(model) {
-        try {
-          const parsed = JSON.parse(model.getValue());
-          const formatted = JSON.stringify(parsed, null, 2);
-
-          return [
-            {
-              range: model.getFullModelRange(),
-              text: formatted,
-            },
-          ];
-        } catch {
-          return [];
-        }
-      },
-    });
 
     const proxy = new Proxy(schemas, {
       set(target: JsonSchemaEntry[], property, value: JsonSchemaEntry) {
@@ -203,7 +187,7 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ editorRef }) => {
       JSON.parse(editorText);
       context.updateOfflineTD(editorText);
       context.updateValidationMessage(validate);
-    } catch (error) {
+    } catch {
       validate.report.json = "failed";
       context.updateValidationMessage(validate);
       setLocalTextState(editorText);
@@ -215,11 +199,21 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ editorRef }) => {
     if (!context.linkedTd) return;
 
     try {
-      const tabs = Object.keys(context.linkedTd).map((key, index) => (
-        <option value={key} key={index}>
-          {key}
-        </option>
-      ));
+      const tabs = Object.entries(context.linkedTd)
+        .filter(([_, value]) => {
+          if (!value || typeof value !== "object") return false;
+
+          const typedValue = value as { kind?: string } & Record<string, unknown>;
+          if (typedValue.kind === "file") return true;
+
+          return Object.keys(typedValue).length > 0;
+        })
+        .map(([key]) => (
+          <option value={key} key={key}>
+            {key}
+          </option>
+        ));
+
       setTabs(tabs);
     } catch (err) {
       console.debug(err);
@@ -232,6 +226,29 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ editorRef }) => {
   };
 
   const beforeMount = (monaco: typeof import("monaco-editor")) => {
+    // Register JSON formatter ONCE (independent of Proxy)
+    if (!jsonFormatterRegistered) {
+      monaco.languages.registerDocumentFormattingEditProvider("json", {
+        provideDocumentFormattingEdits(model) {
+          try {
+            const parsed = JSON.parse(model.getValue());
+            const formatted = JSON.stringify(parsed, null, 2);
+
+            return [
+              {
+                range: model.getFullModelRange(),
+                text: formatted,
+              },
+            ];
+          } catch {
+            return [];
+          }
+        },
+      });
+
+      jsonFormatterRegistered = true;
+    }
+
     monaco.languages.json.jsonDefaults.setDiagnosticsOptions({
       validate: true,
       enableSchemaRequest: true,
