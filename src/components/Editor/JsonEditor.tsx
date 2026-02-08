@@ -46,9 +46,6 @@ const delay = (fn: (text: string) => void, text: string, ms: number) => {
 const JsonEditor: React.FC<JsonEditorProps> = ({ editorRef }) => {
   const context = useContext(ediTDorContext);
 
-  // Read indentation from settings (default = 2)
-  const jsonIndentation = context.settings?.jsonIndentation ?? 2;
-
   const [schemas] = useState<JsonSchemaEntry[]>([]);
   const [proxy, setProxy] = useState<any>(undefined);
   const editorInstance = useRef<editor.IStandaloneCodeEditor | null>(null);
@@ -81,6 +78,8 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ editorRef }) => {
   );
 
   useEffect(() => {
+    if (!proxy) return;
+
     const updateMonacoSchemas = (schemaMap: SchemaMapMessage) => {
       proxy.splice(0, proxy.length);
 
@@ -104,23 +103,13 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ editorRef }) => {
     }
   }, [context.offlineTD, messageWorkers, localTextState]);
 
-  // Update Monaco indentation immediately
-  useEffect(() => {
-    if (editorInstance.current) {
-      editorInstance.current.updateOptions({
-        tabSize: jsonIndentation,
-        insertSpaces: true,
-      });
-    }
-  }, [jsonIndentation]);
-
   const editorDidMount = (
     editor: editor.IStandaloneCodeEditor,
     monaco: typeof import("monaco-editor")
   ) => {
     if (!("Proxy" in window)) {
       console.warn(
-        "Dynamic fetching of schemas is disabled as your browser doesn't support proxies."
+        "dynamic fetching of schemas is disabled as your browser doesn't support proxies."
       );
       return;
     }
@@ -146,15 +135,9 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ editorRef }) => {
     });
 
     editorInstance.current = editor;
-
     if (editorRef) {
       editorRef.current = editor;
     }
-
-    editor.updateOptions({
-      tabSize: jsonIndentation,
-      insertSpaces: true,
-    });
 
     setProxy(proxy);
   };
@@ -194,19 +177,10 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ editorRef }) => {
     };
 
     try {
-      const parsed = JSON.parse(editorText);
-
-      // Auto-format JSON using selected indentation
-      const formatted = JSON.stringify(parsed, null, jsonIndentation);
-
-      // Prevent infinite update loop
-      if (formatted !== editorText) {
-        editorInstance.current?.setValue(formatted);
-      }
-
-      context.updateOfflineTD(formatted);
+      JSON.parse(editorText); // validation only
+      context.updateOfflineTD(editorText);
       context.updateValidationMessage(validate);
-    } catch (error) {
+    } catch {
       validate.report.json = "failed";
       context.updateValidationMessage(validate);
       setLocalTextState(editorText);
@@ -218,11 +192,21 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ editorRef }) => {
     if (!context.linkedTd) return;
 
     try {
-      const tabs = Object.keys(context.linkedTd).map((key, index) => (
-        <option value={key} key={index}>
-          {key}
-        </option>
-      ));
+      const tabs = Object.entries(context.linkedTd)
+        .filter(([_, value]) => {
+          if (!value || typeof value !== "object") return false;
+
+          const typedValue = value as { kind?: string } & Record<string, unknown>;
+          if (typedValue.kind === "file") return true;
+
+          return Object.keys(typedValue).length > 0;
+        })
+        .map(([key]) => (
+          <option value={key} key={key}>
+            {key}
+          </option>
+        ));
+
       setTabs(tabs);
     } catch (err) {
       console.debug(err);
@@ -262,7 +246,7 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ editorRef }) => {
             selectOnLineNumbers: true,
             automaticLayout: true,
             lineDecorationsWidth: 20,
-            tabSize: jsonIndentation,
+            tabSize: 2,
             insertSpaces: true,
           }}
           theme="vs-dark"

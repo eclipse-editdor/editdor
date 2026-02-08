@@ -60,7 +60,9 @@ const Settings: React.FC<SettingsProps> = ({
   useEffect(() => {
     if (onChange) {
       const isValid =
-        !errors.northboundUrl && !errors.southboundUrl && !errors.pathToValue;
+        !errors.northboundUrl &&
+        !errors.southboundUrl &&
+        !errors.pathToValue;
       onChange(data, isValid);
     }
   }, [data, errors, onChange]);
@@ -131,7 +133,8 @@ const Settings: React.FC<SettingsProps> = ({
 
   const handleJsonIndentationChange = useCallback(
     (e: React.ChangeEvent<HTMLSelectElement>) => {
-      const value = Number(e.target.value) as 2 | 4;
+      const parsed = Number(e.target.value);
+      const value: 2 | 4 = parsed === 2 || parsed === 4 ? parsed : 2;
       setData((prev) => ({ ...prev, jsonIndentation: value }));
     },
     []
@@ -147,30 +150,29 @@ const Settings: React.FC<SettingsProps> = ({
           <h2 className="py-2 text-justify text-gray-400">
             If you want to interact with non-HTTP devices via a gateway, you can
             send it TDs to its southbound endpoint with a "POST" request.
-            Similarly, you can retrieve TDs from its northbound endpoint. The id
-            of the initial TD is used to correlate both.
+            Similarly, you can retrieve TDs from its northbound endpoint.
           </h2>
 
           <TextField
             label={
               <InfoIconWrapper
                 tooltip={{
-                  html: "The target northbound URL should point to a server that implements the Discovery Specifications's Things API. If a valid target URL is provided, the editTDor will use it for all interactions with the Thing.",
+                  html: "The target northbound URL should point to a server that implements the Discovery Specifications's Things API.",
                   href: "",
                 }}
                 id="settings-target-url-northbound-info"
-                children={"Target URL Northbound:"}
-              />
+              >
+                Target URL Northbound:
+              </InfoIconWrapper>
             }
             placeholder="e.g.: http://localhost:8080/"
             id="settings-target-url-field-northbound"
             type="text"
             value={data.northboundUrl}
-            autoFocus={false}
             onChange={handleNorthboundUrlChange}
             className={`${
               errors.northboundUrl ? "border-red-500" : "border-gray-600"
-            } w-full rounded-md border-2 bg-gray-600 p-2 text-white focus:border-blue-500 focus:outline-none sm:text-sm`}
+            } w-full rounded-md border-2 bg-gray-600 p-2 text-white`}
           />
           {errors.northboundUrl && (
             <div className="mt-1 text-sm text-red-500">
@@ -181,23 +183,20 @@ const Settings: React.FC<SettingsProps> = ({
           <TextField
             label={
               <InfoIconWrapper
-                tooltip={{
-                  html: "The target southbound URL",
-                  href: "",
-                }}
+                tooltip={{ html: "The target southbound URL", href: "" }}
                 id="settings-target-url-southbound-info"
-                children={"Target URL Southbound:"}
-              />
+              >
+                Target URL Southbound:
+              </InfoIconWrapper>
             }
             placeholder="e.g.: http://localhost:8080/"
             id="settings-target-url-field-southbound"
             type="text"
             value={data.southboundUrl}
-            autoFocus={false}
             onChange={handleSouthboundUrlChange}
             className={`${
               errors.southboundUrl ? "border-red-500" : "border-gray-600"
-            } w-full rounded-md border-2 bg-gray-600 p-2 text-white focus:border-blue-500 focus:outline-none sm:text-sm`}
+            } w-full rounded-md border-2 bg-gray-600 p-2 text-white`}
           />
           {errors.southboundUrl && (
             <div className="mt-1 text-sm text-red-500">
@@ -208,53 +207,21 @@ const Settings: React.FC<SettingsProps> = ({
       </div>
 
       <div className="my-4 rounded-md bg-black bg-opacity-80 p-2">
-        {!hideTitle && <h1 className="font-bold">Path to value</h1>}
-        <div className="px-4">
-          <h2 className="py-2 text-justify text-gray-400">
-            {`If the gateway is wrapping the payloads in a JSON object, please provide the path to the value as a JSON pointer. For a JSON like {"foo": {"bar":"baz"}}, where baz is the value according the Data Schema of the TD, you should enter /foo/bar.`}
-          </h2>
-
-          <TextField
-            label={
-              <InfoIconWrapper
-                tooltip={{
-                  html: "JSON pointer path to the actual value in wrapped payloads. Use forward slashes to navigate nested objects.",
-                  href: "",
-                }}
-                id="settingsPathToValueInfo"
-                children={"JSON Pointer Path:"}
-              />
-            }
-            placeholder="/foo/bar"
-            id="settingsPathToValueField"
-            type="text"
-            value={data.pathToValue}
-            autoFocus={false}
-            onChange={handlePathToValueChange}
-            className={`${
-              errors.pathToValue ? "border-red-500" : "border-gray-600"
-            } w-full rounded-md border-2 bg-gray-600 p-2 text-white focus:border-blue-500 focus:outline-none sm:text-sm`}
-          />
-          {errors.pathToValue && (
-            <div className="mt-1 text-sm text-red-500">
-              {errors.pathToValue}
-            </div>
-          )}
-        </div>
-      </div>
-      
-      <div className="my-4 rounded-md bg-black bg-opacity-80 p-2">
         {!hideTitle && <h1 className="font-bold">JSON Editor</h1>}
         <div className="px-4">
           <h2 className="py-2 text-justify text-gray-400">
             Configure how JSON content is formatted in the editor view.
           </h2>
 
-          <label className="block text-sm text-gray-300 mb-1">
+          <label
+            htmlFor="json-indentation-select"
+            className="block text-sm text-gray-300 mb-1"
+          >
             Space indentation
           </label>
 
           <select
+            id="json-indentation-select"
             value={data.jsonIndentation}
             onChange={handleJsonIndentationChange}
             className="w-full rounded-md border-2 border-gray-600 bg-gray-600 p-2 text-white focus:border-blue-500 focus:outline-none sm:text-sm"
