@@ -286,11 +286,11 @@ const addFormReducer = (
       return state;
     }
 
-    if (!td.forms) {
-      td.forms = undefined;
+    if (!Array.isArray(td.forms)) {
+      td.forms = [];
     }
 
-    td.forms?.push(form);
+    td.forms.push(form);
     return { ...state, offlineTD: JSON.stringify(td, null, 2), parsedTD: td };
   }
 
