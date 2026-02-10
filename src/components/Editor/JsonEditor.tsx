@@ -26,7 +26,6 @@ import { IValidationMessage } from "../../types/context";
 
 type SchemaMapMessage = Map<string, Record<string, unknown>>;
 
-// Monaco editor options
 const editorOptions: editor.IStandaloneEditorConstructionOptions = {
   selectOnLineNumbers: true,
   automaticLayout: true,
@@ -34,8 +33,6 @@ const editorOptions: editor.IStandaloneEditorConstructionOptions = {
   tabSize: 2,
   insertSpaces: true,
 };
-// Ensure formatter is registered only once (Monaco is global)
-let jsonFormatterRegistered = false;
 
 // delay function that executes the callback once it hasn't been called for
 // at least x ms.
@@ -48,6 +45,7 @@ const delay = (fn: (text: string) => void, text: string, ms: number) => {
 type JsonEditorProps = {
   editorRef?: React.MutableRefObject<editor.IStandaloneCodeEditor | null>;
 };
+
 interface JsonSchemaEntry {
   schemaUri: string;
   schema: Record<string, unknown>;
@@ -70,6 +68,7 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ editorRef }) => {
       ),
     []
   );
+
   const schemaWorker = useMemo<Worker>(
     () =>
       new Worker(new URL("../../workers/schemaWorker.js", import.meta.url), {
@@ -87,7 +86,6 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ editorRef }) => {
   );
 
   useEffect(() => {
-    if (!proxy) return;
     const updateMonacoSchemas = (schemaMap: SchemaMapMessage) => {
       proxy.splice(0, proxy.length);
 
@@ -115,7 +113,6 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ editorRef }) => {
     editor: editor.IStandaloneCodeEditor,
     monaco: typeof import("monaco-editor")
   ) => {
-    // Schema fetching requires Proxy support
     if (!("Proxy" in window)) {
       console.warn(
         "dynamic fetching of schemas is disabled as your browser doesn't support proxies."
@@ -144,9 +141,7 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ editorRef }) => {
     });
 
     editorInstance.current = editor;
-    if (editorRef) {
-      editorRef.current = editor;
-    }
+    if (editorRef) editorRef.current = editor;
     setProxy(proxy);
   };
 
@@ -183,11 +178,12 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ editorRef }) => {
       },
       customMessage: "",
     };
+
     try {
       JSON.parse(editorText);
       context.updateOfflineTD(editorText);
       context.updateValidationMessage(validate);
-    } catch {
+    } catch (error) {
       validate.report.json = "failed";
       context.updateValidationMessage(validate);
       setLocalTextState(editorText);
@@ -198,26 +194,24 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ editorRef }) => {
   useEffect(() => {
     if (!context.linkedTd) return;
 
-    try {
-      const tabs = Object.entries(context.linkedTd)
-        .filter(([_, value]) => {
-          if (!value || typeof value !== "object") return false;
+    const tabs: JSX.Element[] = [];
+    let index = 0;
 
-          const typedValue = value as { kind?: string } & Record<string, unknown>;
-          if (typedValue.kind === "file") return true;
-
-          return Object.keys(typedValue).length > 0;
-        })
-        .map(([key]) => (
-          <option value={key} key={key}>
+    for (let key in context.linkedTd) {
+      if (
+        context.linkedTd[key]["kind"] === "file" ||
+        Object.keys(context.linkedTd[key]).length
+      ) {
+        tabs.push(
+          <option value={key} key={index}>
             {key}
           </option>
-        ));
-
-      setTabs(tabs);
-    } catch (err) {
-      console.debug(err);
+        );
+        index++;
+      }
     }
+
+    setTabs(tabs);
   }, [context.linkedTd, context.offlineTD]);
 
   const changeLinkedTd = async () => {
@@ -226,29 +220,6 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ editorRef }) => {
   };
 
   const beforeMount = (monaco: typeof import("monaco-editor")) => {
-    // Register JSON formatter ONCE (independent of Proxy)
-    if (!jsonFormatterRegistered) {
-      monaco.languages.registerDocumentFormattingEditProvider("json", {
-        provideDocumentFormattingEdits(model) {
-          try {
-            const parsed = JSON.parse(model.getValue());
-            const formatted = JSON.stringify(parsed, null, 2);
-
-            return [
-              {
-                range: model.getFullModelRange(),
-                text: formatted,
-              },
-            ];
-          } catch {
-            return [];
-          }
-        },
-      });
-
-      jsonFormatterRegistered = true;
-    }
-
     monaco.languages.json.jsonDefaults.setDiagnosticsOptions({
       validate: true,
       enableSchemaRequest: true,
@@ -261,6 +232,7 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ editorRef }) => {
       <div className="h-[5%] bg-[#1e1e1e]">
         {context.offlineTD && context.linkedTd && (
           <select
+            name="linkedTd"
             id="linkedTd"
             className="w-[50%] bg-[#1e1e1e] text-white"
             onChange={changeLinkedTd}
@@ -269,6 +241,7 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ editorRef }) => {
           </select>
         )}
       </div>
+
       <div className="h-[95%] w-full">
         <Editor
           options={editorOptions}
