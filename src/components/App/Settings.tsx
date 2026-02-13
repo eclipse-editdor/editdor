@@ -138,29 +138,29 @@ const Settings: React.FC<SettingsProps> = ({
     []
   );
 
-  <div className="my-4 rounded-md bg-black bg-opacity-80 p-2">
-    <h1 className="font-bold">JSON Editor</h1>
-    <div className="px-4">
-      <label
-        htmlFor="json-indentation-select"
-        className="mb-1 block text-sm text-gray-300"
-      >
-        Space indentation
-      </label>
-      <select
-        id="json-indentation-select"
-        value={data.jsonIndentation}
-        onChange={handleJsonIndentationChange}
-        className="w-full rounded-md border-2 border-gray-600 bg-gray-600 p-2 text-white focus:border-blue-500 focus:outline-none sm:text-sm"
-      >
-        <option value={2}>2 spaces</option>
-        <option value={4}>4 spaces</option>
-      </select>
-    </div>
-  </div>;
-
   return (
     <div className={className}>
+      <div className="my-4 rounded-md bg-black bg-opacity-80 p-2">
+        {!hideTitle && <h1 className="font-bold">JSON Editor</h1>}
+        <div className="px-4">
+          <label
+            htmlFor="json-indentation-select"
+            className="mb-1 block text-sm text-gray-300"
+          >
+            Space indentation
+          </label>
+          <select
+            id="json-indentation-select"
+            value={data.jsonIndentation}
+            onChange={handleJsonIndentationChange}
+            className="w-full rounded-md border-2 border-gray-600 bg-gray-600 p-2 text-white focus:border-blue-500 focus:outline-none sm:text-sm"
+          >
+            <option value={2}>2 spaces</option>
+            <option value={4}>4 spaces</option>
+          </select>
+        </div>
+      </div>
+
       <div className="rounded-md bg-black bg-opacity-80 p-2">
         {!hideTitle && (
           <h1 className="font-bold">Third Party Service Configuration</h1>

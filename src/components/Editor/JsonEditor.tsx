@@ -208,8 +208,10 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ editorRef }) => {
 
       if (formatted !== editorText) {
         context.updateOfflineTD(formatted);
+        setLocalTextState(formatted);
       } else {
         context.updateOfflineTD(editorText);
+        setLocalTextState(editorText);
       }
 
       context.updateValidationMessage(validate);
@@ -286,6 +288,7 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ editorRef }) => {
             lineDecorationsWidth: 20,
             tabSize: jsonIndentation,
             insertSpaces: true,
+            detectIndentation: false,
           }}
           theme={"vs-" + "dark"}
           language="json"
