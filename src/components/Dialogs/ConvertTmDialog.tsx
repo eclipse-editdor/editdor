@@ -71,7 +71,7 @@ const ConvertTmDialog = forwardRef<ConvertTmDialogRef>((props, ref) => {
     >
       <>
         {warnings.length > 0 && (
-          <div className="bg-yellow-900 text-yellow-200 p-3 rounded mb-4">
+          <div className="mb-4 rounded bg-yellow-900 p-3 text-yellow-200">
             <h3 className="font-bold">CSV Import Warnings</h3>
             <ul className="list-disc pl-5">
               {warnings.map((w, i) => (

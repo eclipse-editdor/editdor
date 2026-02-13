@@ -116,7 +116,9 @@ export const parseCsv = (
 
     if (row["modbus:entity"]) {
       const entityLower = row["modbus:entity"].toLowerCase();
-      const validEntityLower = VALID_MODBUS_ENTITIES.map((e) => e.toLowerCase());
+      const validEntityLower = VALID_MODBUS_ENTITIES.map((e) =>
+        e.toLowerCase()
+      );
       if (!validEntityLower.includes(entityLower)) {
         warnings.push({
           row: rowNum,

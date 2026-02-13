@@ -5,20 +5,24 @@ This directory contains example CSV files for testing the CSV import functionali
 ## Files
 
 ### `valid.csv`
+
 A valid CSV file with correct data types and Modbus entities. This file should import without warnings.
 
 **Valid Types:**
+
 - `number`
 - `string`
 - `boolean`
 
 **Valid Modbus Entities:**
+
 - `HoldingRegister`
 - `InputRegister`
 - `Coil`
 - `DiscreteInput`
 
 ### `invalid.csv`
+
 A CSV file with intentional validation errors to demonstrate the warning system. When imported, this file will trigger the following warnings:
 
 1. **Row 2, type**: `number123` is invalid (should be `number`, `string`, or `boolean`)
@@ -40,6 +44,7 @@ A CSV file with intentional validation errors to demonstrate the warning system.
 ## CSV Format
 
 Required columns:
+
 - `name`: Property name (required)
 - `type`: Data type (number, string, or boolean)
 - `modbus:entity`: Modbus entity type
