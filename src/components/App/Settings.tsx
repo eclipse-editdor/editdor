@@ -19,6 +19,7 @@ export interface SettingsData {
   northboundUrl: string;
   southboundUrl: string;
   pathToValue: string;
+  jsonIndentation: 2 | 4;
 }
 
 export interface SettingsErrors {
@@ -39,6 +40,7 @@ const Settings: React.FC<SettingsProps> = ({
     northboundUrl: "",
     southboundUrl: "",
     pathToValue: "/",
+    jsonIndentation: 2,
   },
   onChange,
   hideTitle = false,
@@ -126,6 +128,36 @@ const Settings: React.FC<SettingsProps> = ({
     },
     []
   );
+
+  const handleJsonIndentationChange = useCallback(
+    (e: React.ChangeEvent<HTMLSelectElement>) => {
+      const parsed = Number(e.target.value);
+      const value: 2 | 4 = parsed === 4 ? 4 : 2;
+      setData((prev) => ({ ...prev, jsonIndentation: value }));
+    },
+    []
+  );
+
+  <div className="my-4 rounded-md bg-black bg-opacity-80 p-2">
+    <h1 className="font-bold">JSON Editor</h1>
+    <div className="px-4">
+      <label
+        htmlFor="json-indentation-select"
+        className="mb-1 block text-sm text-gray-300"
+      >
+        Space indentation
+      </label>
+      <select
+        id="json-indentation-select"
+        value={data.jsonIndentation}
+        onChange={handleJsonIndentationChange}
+        className="w-full rounded-md border-2 border-gray-600 bg-gray-600 p-2 text-white focus:border-blue-500 focus:outline-none sm:text-sm"
+      >
+        <option value={2}>2 spaces</option>
+        <option value={4}>4 spaces</option>
+      </select>
+    </div>
+  </div>;
 
   return (
     <div className={className}>
