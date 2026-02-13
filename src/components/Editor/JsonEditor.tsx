@@ -54,6 +54,7 @@ interface JsonSchemaEntry {
 const JsonEditor: React.FC<JsonEditorProps> = ({ editorRef }) => {
   const context = useContext(ediTDorContext);
 
+  const jsonIndentation = context.settings?.jsonIndentation ?? 2;
   const [schemas] = useState<JsonSchemaEntry[]>([]);
   const [proxy, setProxy] = useState<any>(undefined);
   const editorInstance = useRef<editor.IStandaloneCodeEditor | null>(null);
@@ -85,6 +86,8 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ editorRef }) => {
   );
 
   useEffect(() => {
+    if (!proxy) return;
+
     const updateMonacoSchemas = (schemaMap: SchemaMapMessage) => {
       proxy.splice(0, proxy.length);
 
@@ -200,8 +203,14 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ editorRef }) => {
       customMessage: "",
     };
     try {
-      JSON.parse(editorText);
-      context.updateOfflineTD(editorText);
+      const parsed = JSON.parse(editorText);
+      const formatted = JSON.stringify(parsed, null, jsonIndentation);
+
+      if (formatted !== editorText) {
+        context.updateOfflineTD(formatted);
+      } else {
+        context.updateOfflineTD(editorText);
+      }
 
       context.updateValidationMessage(validate);
     } catch (error) {
@@ -271,7 +280,13 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ editorRef }) => {
       </div>
       <div className="h-[95%] w-full">
         <Editor
-          options={editorOptions}
+          options={{
+            selectOnLineNumbers: true,
+            automaticLayout: true,
+            lineDecorationsWidth: 20,
+            tabSize: jsonIndentation,
+            insertSpaces: true,
+          }}
           theme={"vs-" + "dark"}
           language="json"
           value={context.offlineTD}
