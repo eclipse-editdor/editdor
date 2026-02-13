@@ -93,17 +93,17 @@ When using the **Send TD** feature, ediTDor communicates with a proxy that expos
 an HTTP interface for interacting with a Thing.
 
 - **Southbound URL**
-  - Base *Things API collection endpoint* of the proxy where ediTDor sends the original Thing Description
+  - Base _Things API collection endpoint_ of the proxy where ediTDor sends the original Thing Description
   - ediTDor performs a `POST` to this endpoint; the proxy assigns the Thing/TD identifier
   - Used internally by the proxy to reach the underlying Thing using protocol-specific bindings (e.g., Modbus)
 
 - **Northbound URL**
-  - Base *Things API collection endpoint* exposed by the proxy after the Thing Description is registered
+  - Base _Things API collection endpoint_ exposed by the proxy after the Thing Description is registered
   - ediTDor appends the encoded Thing/TD identifier to this base URL to fetch or interact with the proxied Thing Description
   - The proxied TD contains HTTP `href`s that ediTDor can invoke
 
 In practice, ediTDor always interacts with the Thing **through the proxy via the Northbound URL**, while the Southbound URL is used internally by the proxy to communicate with the actual Thing.
-To use the **_Send TD_** feature, it is necessary to define in the Settings pop-up the Southbound URL and Northbound URL. The Send TD feature allows you to send your Thing Description to any service following the WoT Discovery *Things API* specification
+To use the **_Send TD_** feature, it is necessary to define in the Settings pop-up the Southbound URL and Northbound URL. The Send TD feature allows you to send your Thing Description to any service following the WoT Discovery _Things API_ specification
 (https://www.w3.org/TR/wot-discovery/#exploration-directory-api-things).
 Afterwards, if the service proxies the TD, ediTDor can fetch the proxied TD containing HTTP `href`s to interact with the original Thing.
 
