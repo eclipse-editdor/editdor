@@ -215,7 +215,8 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ editorRef }) => {
   }, [context.linkedTd, context.offlineTD]);
 
   const changeLinkedTd = async () => {
-    const href = (document.getElementById("linkedTd") as HTMLSelectElement).value;
+    const href = (document.getElementById("linkedTd") as HTMLSelectElement)
+      .value;
     changeBetweenTd(context, href);
   };
 
