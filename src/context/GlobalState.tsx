@@ -16,6 +16,7 @@ import EdiTDorContext from "./ediTDorContext";
 import { editdorReducer } from "./editorReducers";
 
 export const UPDATE_OFFLINE_TD = "UPDATE_OFFLINE_TD";
+export const UPDATE_JSON_INDENTATION = "UPDATE_JSON_INDENTATION";
 export const UPDATE_IS_MODIFIED = "UPDATE_IS_MODIFIED";
 export const SET_FILE_HANDLE = "SET_FILE_HANDLE";
 export const REMOVE_FORM_FROM_TD = "REMOVE_FORM_FROM_TD";
@@ -93,7 +94,16 @@ const GlobalState: React.FC<IGlobalStateProps> = ({ children }) => {
       nameRepository: "",
       dynamicValues: {},
     },
+    jsonIndentation: 2,
+    updateJsonIndentation: () => {},
   });
+
+  const updateJsonIndentation = (indentation: number) => {
+    dispatch({
+      type: UPDATE_JSON_INDENTATION,
+      jsonIndentation: indentation,
+    });
+  };
 
   const updateOfflineTD = (offlineTD: string) => {
     dispatch({ type: UPDATE_OFFLINE_TD, offlineTD: offlineTD });
@@ -202,6 +212,8 @@ const GlobalState: React.FC<IGlobalStateProps> = ({ children }) => {
         updateValidationMessage,
         updateNorthboundConnection,
         updateContributeCatalog,
+        jsonIndentation: editdorState.jsonIndentation,
+        updateJsonIndentation,
       }}
     >
       {children}
