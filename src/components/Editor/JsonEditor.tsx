@@ -31,6 +31,8 @@ const editorOptions: editor.IStandaloneEditorConstructionOptions = {
   selectOnLineNumbers: true,
   automaticLayout: true,
   lineDecorationsWidth: 20,
+  tabSize: 2,
+  insertSpaces: true,
 };
 
 // delay function that executes the callback once it hasn't been called for
