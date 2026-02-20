@@ -1,0 +1,6 @@
+name,type,modbus:entity,modbus:address,modbus:unitID,modbus:quantity,modbus:zeroBasedAddressing,modbus:function,modbus:mostSignificantByte,modbus:mostSignificantWord,href
+temp1,number123,holdingregister,40001,1,1,false,03,true,false,/temp
+humidity,number,InvalidRegister,40002,1,1,false,04,false,false,/humidity
+pressure,invalid_type,HoldingRegister,40003,1,2,true,03,true,true,/pressure
+status,string,coil,00001,1,1,false,01,false,false,/status
+alarm,boolean,DiscreteInput,10001,1,1,false,02,false,false,/alarm
