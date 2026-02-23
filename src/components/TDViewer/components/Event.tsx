@@ -100,9 +100,7 @@ const Event: React.FC<any> = (props) => {
           isExpanded ? "bg-gray-500" : ""
         }`}
       >
-        <div className="flex-grow px-2">
-          {event.title ?? props.eventName}
-        </div>
+        <div className="flex-grow px-2">{event.title ?? props.eventName}</div>
 
         {isExpanded && (
           <>
@@ -142,9 +140,7 @@ const Event: React.FC<any> = (props) => {
           </div>
         )}
 
-        <ul className="list-disc pl-6 text-base text-gray-300">
-          {attributes}
-        </ul>
+        <ul className="list-disc pl-6 text-base text-gray-300">{attributes}</ul>
 
         <div className="flex items-center justify-start pb-2 pt-2">
           <InfoIconWrapper
