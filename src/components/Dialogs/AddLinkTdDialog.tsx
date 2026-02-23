@@ -80,8 +80,14 @@ const AddLinkTdDialog = forwardRef<AddLinkTdDialogRef, AddLinkTdDialogProps>(
     };
 
     const addLinksToTd = (link: Link): void => {
-      tdJSON["links"] = [...(tdJSON["links"] ? tdJSON["links"] : []), link];
-      context.updateOfflineTD(JSON.stringify(tdJSON, null, 2));
+      // clone instead of mutating original TD
+      const updatedTd = structuredClone(context.parsedTD);
+      // initialize links array if missing
+      if (!Array.isArray(updatedTd.links)) {
+        updatedTd.links = [];
+      }
+      updatedTd.links.push(link);
+      context.updateOfflineTD(JSON.stringify(updatedTd, null, 2));
     };
 
     const linkingMethodChange = (linkingOption: string): void => {
@@ -243,6 +249,8 @@ const AddLinkTdDialog = forwardRef<AddLinkTdDialogRef, AddLinkTdDialogProps>(
         return;
       }
 
+      const linkedTd: Record<string, any> = {};
+
       const link: Link = {
         href:
           (
@@ -272,7 +280,7 @@ const AddLinkTdDialog = forwardRef<AddLinkTdDialogRef, AddLinkTdDialogProps>(
       ) {
         try {
           var httpRequest = new XMLHttpRequest();
-          httpRequest.open("GET", href, false);
+          httpRequest.open("GET", link.href, false);
           httpRequest.send();
           if (
             httpRequest
@@ -286,10 +294,10 @@ const AddLinkTdDialog = forwardRef<AddLinkTdDialogRef, AddLinkTdDialogProps>(
         } catch (ex) {
           const msg = "We ran into an error trying to fetch your TD.";
           console.error(msg, ex);
-          linkedTd[href] = currentLinkedTd;
+          linkedTd[link.href] = currentLinkedTd;
         }
       } else {
-        linkedTd[href] = currentLinkedTd;
+        linkedTd[link.href] = currentLinkedTd;
       }
 
       if (link.href === "") {

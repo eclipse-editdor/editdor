@@ -18,7 +18,8 @@ This project aims to make creating W3C Thing Description (TD) instances and Thin
 - Exporting the Thing Description / Thing Model from the visual representation into JSON-LD
 - Reading/writing exposed properties' values exposed by a proxy (anything that can translate a protocol to HTTP)
 - Contributing the Thing Model to a third-party catalog using the Thing Model Catalog (TMC) API.
-  The detailed API specification is available [here](https://github.com/wot-oss/tmc/blob/main/api/tm-catalog.openapi.yaml).
+  The detailed **Thing Model Catalog (TMC) OpenAPI specification** is available
+  [here](https://github.com/wot-oss/tmc/blob/main/api/tm-catalog.openapi.yaml).
 
 ## Technologies
 
@@ -86,14 +87,38 @@ A local repository folder will be created inside the tm-catalog directory
 
 ### Send TD feature
 
-To use the **_Send TD_** feature, it is necessary to define in the Settings pop-up the Southbound URL and Northbound URL. The Send TD feature allows you to send your Thing Description to any service following [the WoT TD Directory specification](https://www.w3.org/TR/wot-discovery/#exploration-directory-api-things).
+#### Northbound and Southbound URLs
+
+When using the **Send TD** feature, ediTDor communicates with a proxy that exposes
+an HTTP interface for interacting with a Thing.
+
+- **Southbound URL**
+  - Base _Things API collection endpoint_ of the proxy where ediTDor sends the original Thing Description
+  - ediTDor performs a `POST` to this endpoint; the proxy assigns the Thing/TD identifier
+  - Used internally by the proxy to reach the underlying Thing using protocol-specific bindings (e.g., Modbus)
+
+- **Northbound URL**
+  - Base _Things API collection endpoint_ exposed by the proxy after the Thing Description is registered
+  - ediTDor appends the encoded Thing/TD identifier to this base URL to fetch or interact with the proxied Thing Description
+  - The proxied TD contains HTTP `href`s that ediTDor can invoke
+
+In practice, ediTDor always interacts with the Thing **through the proxy via the Northbound URL**, while the Southbound URL is used internally by the proxy to communicate with the actual Thing.
+To use the **_Send TD_** feature, it is necessary to define in the Settings pop-up the Southbound URL and Northbound URL. The Send TD feature allows you to send your Thing Description to any service following the WoT Discovery _Things API_ specification
+(https://www.w3.org/TR/wot-discovery/#exploration-directory-api-things).
 Afterwards, if the service proxies the TD, ediTDor can fetch the proxied TD containing HTTP `href`s to interact with the original Thing.
 
 #### Configuration
 
 1. Open the Settings pop-up from the main toolbar
-2. Enter your Southbound URL in the designated field (e.g., `http://localhost:8080`)
-3. Click Save to store the URL
+2. Enter the **Southbound URL** (Things API collection endpoint, e.g. `http://localhost:8080/things/`)
+3. Enter the **Northbound URL** (Things API collection endpoint exposed by the proxy)
+4. Click Save to store the URLs
+
+> ⚠️ Important  
+> Do **not** paste a full Thing or TD resource URL (e.g. `/things/{id}`).
+> Both Northbound and Southbound URLs must point to the **Things API collection endpoint**
+> (typically ending with `/things/`).  
+> ediTDor automatically appends the Thing/TD identifier when sending or fetching data.
 
 The proxy uses the TD sent to its southbound API endpoint to communicate with a Thing. This way, you can interact with a non-HTTP Thing from your ediTDor.
 

@@ -27,6 +27,13 @@ import { IValidationMessage } from "../../types/context";
 type SchemaMapMessage = Map<string, Record<string, unknown>>;
 
 // List of all Options can be found here: https://microsoft.github.io/monaco-editor/docs.html#interfaces/editor.IStandaloneEditorConstructionOptions.html
+const editorOptions: editor.IStandaloneEditorConstructionOptions = {
+  selectOnLineNumbers: true,
+  automaticLayout: true,
+  lineDecorationsWidth: 20,
+  tabSize: 2,
+  insertSpaces: true,
+};
 
 // delay function that executes the callback once it hasn't been called for
 // at least x ms.
