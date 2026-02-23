@@ -161,10 +161,8 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ editorRef }) => {
     setProxy(proxy);
   };
 
-  const onChange: OnChange = async (editorText: string | undefined) => {
-    if (!editorText) {
-      return;
-    }
+  const onChange: OnChange = (editorText: string | undefined) => {
+    if (!editorText) return;
     let validate: IValidationMessage = {
       report: {
         json: null,
@@ -195,27 +193,24 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ editorRef }) => {
       },
       customMessage: "",
     };
-    try {
-      const parsed = JSON.parse(editorText);
-      const formatted = JSON.stringify(parsed, null, jsonIndentation);
 
-      if (formatted !== editorText) {
-        context.updateOfflineTD(formatted);
-        setLocalTextState(formatted);
-      } else {
+    try {
+      JSON.parse(editorText);
+
+      if (editorText !== context.offlineTD) {
         context.updateOfflineTD(editorText);
-        setLocalTextState(editorText);
       }
 
+      setLocalTextState(editorText);
       context.updateValidationMessage(validate);
+
+      delay(messageWorkers, editorText, 500);
     } catch (error) {
-      let message: string =
-        "Invalid JSON: " +
-        (error instanceof Error ? error.message : String(error));
       validate.report.json = "failed";
       context.updateValidationMessage(validate);
       setLocalTextState(editorText);
-      delay(messageWorkers, editorText ?? "", 500);
+
+      delay(messageWorkers, editorText, 500);
     }
   };
 
@@ -246,6 +241,19 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ editorRef }) => {
     }
   }, [context.linkedTd, context.offlineTD]);
 
+  useEffect(() => {
+    try {
+      const parsed = JSON.parse(context.offlineTD);
+      const formatted = JSON.stringify(parsed, null, jsonIndentation);
+
+      if (formatted !== context.offlineTD) {
+        context.updateOfflineTD(formatted);
+      }
+    } catch {
+      // ignore invalid JSON
+    }
+  }, [jsonIndentation, context.offlineTD]);
+
   const changeLinkedTd = async () => {
     let href = (document.getElementById("linkedTd") as HTMLSelectElement).value;
     changeBetweenTd(context, href);
@@ -258,6 +266,18 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ editorRef }) => {
       schemas: [],
     });
   };
+
+  const editorOptions = useMemo(
+    () => ({
+      selectOnLineNumbers: true,
+      automaticLayout: true,
+      lineDecorationsWidth: 20,
+      tabSize: jsonIndentation,
+      insertSpaces: true,
+      detectIndentation: false,
+    }),
+    [jsonIndentation]
+  );
 
   return (
     <>
@@ -275,14 +295,7 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ editorRef }) => {
       </div>
       <div className="h-[95%] w-full">
         <Editor
-          options={{
-            selectOnLineNumbers: true,
-            automaticLayout: true,
-            lineDecorationsWidth: 20,
-            tabSize: jsonIndentation,
-            insertSpaces: true,
-            detectIndentation: false,
-          }}
+          options={editorOptions}
           theme={"vs-" + "dark"}
           language="json"
           value={context.offlineTD}

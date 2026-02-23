@@ -13,6 +13,7 @@ declare global {
 
     northboundConnection: INorthboundConnection;
     contributeCatalog: IContributeCatalog;
+    settings: SettingsData;
 
     // Callback functions
     updateOfflineTD: (td: string) => void;
@@ -141,7 +142,8 @@ declare global {
     | {
         type: "UPDATE_CONTRIBUTE_CATALOG";
         contributeCatalog: IContributeCatalog;
-      };
+      }
+    | { type: "UPDATE_SETTINGS"; settings: SettingsData };
 
   declare type Validation = "VALID" | "INVALID" | "VALIDATING" | null;
   declare type ActiveSection =
@@ -157,6 +159,7 @@ declare global {
     northboundUrl: string;
     southboundUrl: string;
     pathToValue: string;
+    jsonIndentation: 2 | 4;
   }
 
   // Define the shape of the state
