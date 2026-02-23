@@ -65,7 +65,6 @@ const Action: React.FC<any> = (props) => {
     context.removeOneOfAKindReducer("actions", props.actionName);
   };
 
-
   const handleCopyAction = () => {
     try {
       const { updatedTD, newName } = copyAffordance({
@@ -101,9 +100,7 @@ const Action: React.FC<any> = (props) => {
           isExpanded ? "bg-gray-500" : ""
         }`}
       >
-        <h3 className="flex-grow px-2">
-          {action.title ?? props.actionName}
-        </h3>
+        <h3 className="flex-grow px-2">{action.title ?? props.actionName}</h3>
 
         {isExpanded && (
           <>
@@ -141,9 +138,7 @@ const Action: React.FC<any> = (props) => {
           </div>
         )}
 
-        <ul className="list-disc pl-6 text-base text-gray-300">
-          {attributes}
-        </ul>
+        <ul className="list-disc pl-6 text-base text-gray-300">{attributes}</ul>
 
         <div className="flex items-center justify-start pb-2 pt-2">
           <InfoIconWrapper

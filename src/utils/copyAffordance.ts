@@ -32,7 +32,6 @@ export function copyAffordance({
 
   const originalSection = parsedTD[section];
 
-  
   let newName = `${originalName}_copy`;
   let counter = 1;
 
@@ -58,7 +57,6 @@ export function copyAffordance({
   }
 
   const updatedSection = Object.fromEntries(newEntries);
-
 
   const updatedTD = {
     ...parsedTD,

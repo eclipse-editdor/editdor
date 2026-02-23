@@ -115,9 +115,7 @@ const Property: React.FC<IProperty> = (props) => {
           isExpanded ? "bg-gray-500" : ""
         }`}
       >
-        <h3 className="flex-grow px-2">
-          {property.title ?? props.propName}
-        </h3>
+        <h3 className="flex-grow px-2">{property.title ?? props.propName}</h3>
 
         {isExpanded && (
           <>
@@ -157,9 +155,7 @@ const Property: React.FC<IProperty> = (props) => {
           </div>
         )}
 
-        <ul className="list-disc pl-6 text-base text-gray-300">
-          {attributes}
-        </ul>
+        <ul className="list-disc pl-6 text-base text-gray-300">{attributes}</ul>
 
         <div className="flex items-center justify-start pb-2 pt-2">
           <InfoIconWrapper tooltip={getFormsTooltipContent()} id="properties">
