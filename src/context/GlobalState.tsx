@@ -28,6 +28,7 @@ export const UPDATE_VALIDATION_MESSAGE = "UPDATE_VALIDATION_MESSAGE";
 export const UPDATE_NORTHBOUND_CONNECTION = "UPDATE_NORTHBOUND_CONNECTION";
 export const UPDATE_CONTRIBUTE_CATALOG = "UPDATE_CONTRIBUTE_CATALOG";
 export const UPDATE_BACKGROUND_TM = "UPDATE_BACKGROUND_TM";
+export const UPDATE_SETTINGS = "UPDATE_SETTINGS";
 
 interface IGlobalStateProps {
   children: ReactNode;
@@ -92,6 +93,12 @@ const GlobalState: React.FC<IGlobalStateProps> = ({ children }) => {
       tmCatalogEndpoint: "",
       nameRepository: "",
       dynamicValues: {},
+    },
+    settings: {
+      northboundUrl: "",
+      southboundUrl: "",
+      pathToValue: "/",
+      jsonIndentation: 2,
     },
   });
 
@@ -177,6 +184,13 @@ const GlobalState: React.FC<IGlobalStateProps> = ({ children }) => {
     });
   };
 
+  const updateSettings = (settings: SettingsData) => {
+    dispatch({
+      type: UPDATE_SETTINGS,
+      settings,
+    });
+  };
+
   return (
     <EdiTDorContext.Provider
       value={{
@@ -190,6 +204,8 @@ const GlobalState: React.FC<IGlobalStateProps> = ({ children }) => {
         validationMessage: editdorState.validationMessage,
         northboundConnection: editdorState.northboundConnection,
         contributeCatalog: editdorState.contributeCatalog,
+        settings: editdorState.settings,
+        updateSettings,
         updateOfflineTD,
         updateIsModified,
         setFileHandle,
