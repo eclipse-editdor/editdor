@@ -36,7 +36,13 @@ temperature,number,40001,coil,1,2,false,03,true,true,/temperature`;
         href: "/temperature",
       },
     ]);
-    expect(warnings).toEqual([]);
+    expect(warnings).toEqual([
+      {
+        row: 2,
+        column: "modbus:entity",
+        message: 'Modbus entity "coil" has incorrect casing; expected "Coil"',
+      },
+    ]);
   });
 
   test("should handle empty CSV content", () => {
