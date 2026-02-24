@@ -21,6 +21,9 @@ const VALID_MODBUS_ENTITIES = [
   "DiscreteInput",
 ];
 
+const VALID_MODBUS_ENTITIES_LOWER = VALID_MODBUS_ENTITIES.map((e) =>
+  e.toLowerCase()
+);
 /** ====================================================== */
 
 export type CsvData = {
@@ -91,10 +94,12 @@ export const parseCsv = (
   const warnings: CsvWarning[] = [];
 
   const res = Papa.parse<CsvData>(csvContent, {
-    header: true,
+    header: hasHeaders,
+    quoteChar: '"',
     skipEmptyLines: true,
+    dynamicTyping: false,
     transformHeader: (h) => h.trim(),
-    transform: (v) => (typeof v === "string" ? v.trim() : v),
+    transform: (value) => (typeof value === "string" ? value.trim() : value),
   });
 
   if (res.errors.length) {
@@ -115,16 +120,27 @@ export const parseCsv = (
     }
 
     if (row["modbus:entity"]) {
-      const entityLower = row["modbus:entity"].toLowerCase();
-      const validEntityLower = VALID_MODBUS_ENTITIES.map((e) =>
-        e.toLowerCase()
-      );
-      if (!validEntityLower.includes(entityLower)) {
+      const entityValue = row["modbus:entity"];
+      const entityLower = entityValue.toLowerCase();
+
+      const matchedIndex = VALID_MODBUS_ENTITIES_LOWER.indexOf(entityLower);
+
+      if (matchedIndex === -1) {
         warnings.push({
           row: rowNum,
           column: "modbus:entity",
-          message: `Invalid modbus entity "${row["modbus:entity"]}"`,
+          message: `Invalid modbus entity "${entityValue}"`,
         });
+      } else {
+        const canonical = VALID_MODBUS_ENTITIES[matchedIndex];
+
+        if (entityValue !== canonical) {
+          warnings.push({
+            row: rowNum,
+            column: "modbus:entity",
+            message: `Modbus entity "${entityValue}" has incorrect casing; expected "${canonical}"`,
+          });
+        }
       }
     }
   });

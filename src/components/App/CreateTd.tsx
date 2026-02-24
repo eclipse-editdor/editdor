@@ -98,8 +98,8 @@ const CreateTd: React.FC<CreateTdProps> = ({
         if (warnings.length > 0) {
           const warningMessage = warnings
             .map((w) => `Row ${w.row}, column "${w.column}": ${w.message}`)
-            .join("\n");
-          setError({ open: true, message: `Warnings:\n${warningMessage}` });
+            .join("; ");
+          setError({ open: true, message: `Warnings: ${warningMessage}` });
         } else {
           setError({ open: false, message: "" });
         }

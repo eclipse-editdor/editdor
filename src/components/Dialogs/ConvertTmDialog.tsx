@@ -18,7 +18,6 @@ import {
   isVersionValid,
 } from "../../services/operations";
 import TextField from "../base/TextField";
-import { CsvWarning } from "../../utils/parser";
 
 export interface ConvertTmDialogRef {
   openModal: () => void;
@@ -29,7 +28,6 @@ const ConvertTmDialog = forwardRef<ConvertTmDialogRef>((props, ref) => {
   const context = useContext(ediTDorContext);
 
   const [display, setDisplay] = useState(false);
-  const [warnings, setWarnings] = useState<CsvWarning[]>([]);
   const [validVersion, setValidVersion] = useState(false);
   const [versionInput, setVersionInput] = useState("");
 
@@ -67,22 +65,9 @@ const ConvertTmDialog = forwardRef<ConvertTmDialogRef>((props, ref) => {
       onHandleEventRightButton={handleGenerateTd}
       rightButton={"Generate TD"}
       title={"Generate TD From TM"}
-      description={"CSV conversion completed"}
+      description={"Please provide values to switch the placeholders with."}
     >
       <>
-        {warnings.length > 0 && (
-          <div className="mb-4 rounded bg-yellow-900 p-3 text-yellow-200">
-            <h3 className="font-bold">CSV Import Warnings</h3>
-            <ul className="list-disc pl-5">
-              {warnings.map((w, i) => (
-                <li key={i}>
-                  Row {w.row}, {w.column}: {w.message}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
         {!validVersion && (
           <TextField
             label="TD instance version"
