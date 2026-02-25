@@ -209,8 +209,7 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ editorRef }) => {
       validate.report.json = "failed";
       context.updateValidationMessage(validate);
       setLocalTextState(editorText);
-
-      delay(messageWorkers, editorText, 500);
+      delay(messageWorkers, editorText ?? "", 500);
     }
   };
 
