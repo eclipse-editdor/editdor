@@ -28,7 +28,7 @@ export const UPDATE_VALIDATION_MESSAGE = "UPDATE_VALIDATION_MESSAGE";
 export const UPDATE_NORTHBOUND_CONNECTION = "UPDATE_NORTHBOUND_CONNECTION";
 export const UPDATE_CONTRIBUTE_CATALOG = "UPDATE_CONTRIBUTE_CATALOG";
 export const UPDATE_BACKGROUND_TM = "UPDATE_BACKGROUND_TM";
-export const UPDATE_SETTINGS = "UPDATE_SETTINGS";
+export const UPDATE_JSON_INDENTATION = "UPDATE_JSON_INDENTATION";
 
 interface IGlobalStateProps {
   children: ReactNode;
@@ -94,12 +94,7 @@ const GlobalState: React.FC<IGlobalStateProps> = ({ children }) => {
       nameRepository: "",
       dynamicValues: {},
     },
-    settings: {
-      northboundUrl: "",
-      southboundUrl: "",
-      pathToValue: "/",
-      jsonIndentation: 2,
-    },
+    jsonIndentation: 2,
   });
 
   const updateOfflineTD = (offlineTD: string) => {
@@ -184,10 +179,10 @@ const GlobalState: React.FC<IGlobalStateProps> = ({ children }) => {
     });
   };
 
-  const updateSettings = (settings: SettingsData) => {
+  const updateJsonIndentation = (value: 2 | 4) => {
     dispatch({
-      type: UPDATE_SETTINGS,
-      settings,
+      type: UPDATE_JSON_INDENTATION,
+      value,
     });
   };
 
@@ -204,8 +199,8 @@ const GlobalState: React.FC<IGlobalStateProps> = ({ children }) => {
         validationMessage: editdorState.validationMessage,
         northboundConnection: editdorState.northboundConnection,
         contributeCatalog: editdorState.contributeCatalog,
-        settings: editdorState.settings,
-        updateSettings,
+        jsonIndentation: editdorState.jsonIndentation,
+        updateJsonIndentation,
         updateOfflineTD,
         updateIsModified,
         setFileHandle,

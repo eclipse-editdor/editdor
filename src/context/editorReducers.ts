@@ -10,7 +10,6 @@
  *
  * SPDX-License-Identifier: EPL-2.0 OR W3C-20150513
  ********************************************************************************/
-import { SettingsData } from "../components/App/Settings";
 import {
   ADD_FORM_TO_TD,
   ADD_LINKED_TD,
@@ -24,7 +23,7 @@ import {
   UPDATE_VALIDATION_MESSAGE,
   UPDATE_NORTHBOUND_CONNECTION,
   UPDATE_CONTRIBUTE_CATALOG,
-  UPDATE_SETTINGS,
+  UPDATE_JSON_INDENTATION,
 } from "./GlobalState";
 import type {
   ThingDescription,
@@ -72,8 +71,8 @@ export const editdorReducer = (
       return updateNorthboundConnection(action.northboundConnection, state);
     case UPDATE_CONTRIBUTE_CATALOG:
       return updateContributeCatalog(action.contributeCatalog, state);
-    case UPDATE_SETTINGS:
-      return updateSettingsReducer(action.settings, state);
+    case UPDATE_JSON_INDENTATION:
+      return updateJsonIndentationReducer(action.value, state);
     default:
       return state;
   }
@@ -369,12 +368,12 @@ const updateContributeCatalog = (
 ): EditorState => {
   return { ...state, contributeCatalog };
 };
-const updateSettingsReducer = (
-  settings: SettingsData,
+const updateJsonIndentationReducer = (
+  jsonIndentation: 2 | 4,
   state: EditorState
 ): EditorState => {
   return {
     ...state,
-    settings,
+    jsonIndentation,
   };
 };
