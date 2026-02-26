@@ -26,55 +26,20 @@ import { copyAffordance } from "../../../utils/copyAffordance";
 
 const alreadyRenderedKeys = ["title", "forms", "description"];
 
-interface IProperty {
-  prop: {
-    title: string;
-    forms: Array<{
-      href: string;
-      contentType?: string;
-      op?: string | string[];
-      [key: string]: any;
-    }>;
-    description?: string;
-    [key: string]: any;
-  };
-  propName: string;
-}
-
-const Property: React.FC<IProperty> = (props) => {
+const Property: React.FC<any> = (props) => {
   const context = useContext(ediTDorContext);
   const [isExpanded, setIsExpanded] = useState(false);
 
   const addFormDialog = useRef<{ openModal: () => void }>(null);
-  const handleOpenAddFormDialog = () => {
-    addFormDialog.current?.openModal();
-  };
-
-  if (
-    Object.keys(props.prop).length === 0 &&
-    props.prop.constructor !== Object
-  ) {
-    return (
-      <div className="text-3xl text-white">
-        Property could not be rendered because mandatory fields are missing.
-      </div>
-    );
-  }
 
   const property = props.prop;
-  const forms = separateForms(structuredClone(props.prop.forms));
+  const forms = separateForms(structuredClone(property.forms));
 
   const attributeListObject = buildAttributeListObject(
     { name: props.propName },
-    props.prop,
+    property,
     alreadyRenderedKeys
   );
-
-  const attributes = Object.keys(attributeListObject).map((x) => (
-    <li key={x}>
-      {x} : {JSON.stringify(attributeListObject[x])}
-    </li>
-  ));
 
   const handleDeletePropertyClicked = () => {
     context.removeOneOfAKindReducer("properties", props.propName);
@@ -90,7 +55,6 @@ const Property: React.FC<IProperty> = (props) => {
       });
 
       context.updateOfflineTD(JSON.stringify(updatedTD, null, 2));
-
       setIsExpanded(true);
 
       setTimeout(() => {
@@ -119,9 +83,8 @@ const Property: React.FC<IProperty> = (props) => {
 
         {isExpanded && (
           <>
-            {/* COPY BUTTON */}
             <button
-              className="flex h-10 w-10 items-center justify-center self-stretch bg-gray-400 text-base"
+              className="flex h-10 w-10 items-center justify-center self-stretch bg-gray-400"
               title="Copy property"
               onClick={(e) => {
                 e.preventDefault();
@@ -132,9 +95,8 @@ const Property: React.FC<IProperty> = (props) => {
               <Copy size={16} color="white" />
             </button>
 
-            {/* DELETE BUTTON */}
             <button
-              className="flex h-10 w-10 items-center justify-center self-stretch rounded-bl-md rounded-tr-md bg-gray-400 text-base"
+              className="flex h-10 w-10 items-center justify-center self-stretch rounded-bl-lg rounded-tr-lg bg-gray-400"
               title="Delete property"
               onClick={(e) => {
                 e.preventDefault();
@@ -155,15 +117,20 @@ const Property: React.FC<IProperty> = (props) => {
           </div>
         )}
 
-        <ul className="list-disc pl-6 text-base text-gray-300">{attributes}</ul>
+        <ul className="list-disc pl-6 text-base text-gray-300">
+          {Object.entries(attributeListObject).map(([k, v]) => (
+            <li key={k}>
+              {k}: {JSON.stringify(v)}
+            </li>
+          ))}
+        </ul>
 
-        <div className="flex items-center justify-start pb-2 pt-2">
-          <InfoIconWrapper tooltip={getFormsTooltipContent()} id="properties">
-            <h4 className="pr-1 text-lg font-bold text-white">Forms</h4>
-          </InfoIconWrapper>
-        </div>
+        <InfoIconWrapper tooltip={getFormsTooltipContent()} id="properties">
+          <h4 className="text-lg font-bold text-white">Forms</h4>
+        </InfoIconWrapper>
 
-        <AddFormElement onClick={handleOpenAddFormDialog} />
+        <AddFormElement onClick={() => addFormDialog.current?.openModal()} />
+
         <AddFormDialog
           type="property"
           interaction={property}

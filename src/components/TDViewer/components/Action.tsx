@@ -31,6 +31,7 @@ const Action: React.FC<any> = (props) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
   const addFormDialog = React.useRef<any>();
+
   const handleOpenAddFormDialog = () => {
     addFormDialog.current?.openModal();
   };
@@ -79,9 +80,10 @@ const Action: React.FC<any> = (props) => {
       setIsExpanded(true);
 
       setTimeout(() => {
-        document
-          .getElementById(`action-${newName}`)
-          ?.scrollIntoView({ behavior: "smooth", block: "center" });
+        document.getElementById(`action-${newName}`)?.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
       }, 100);
     } catch (e) {
       console.error(e);
@@ -105,7 +107,7 @@ const Action: React.FC<any> = (props) => {
         {isExpanded && (
           <>
             <button
-              className="flex h-10 w-10 items-center justify-center self-stretch bg-gray-400 text-base"
+              className="flex h-10 w-10 items-center justify-center self-stretch rounded-bl-lg bg-gray-400 text-base"
               title="Copy action"
               onClick={(e) => {
                 e.preventDefault();
@@ -115,9 +117,8 @@ const Action: React.FC<any> = (props) => {
             >
               <Copy size={16} color="white" />
             </button>
-
             <button
-              className="flex h-10 w-10 items-center justify-center self-stretch rounded-bl-md rounded-tr-md bg-gray-400 text-base"
+              className="flex h-10 w-10 items-center justify-center self-stretch rounded-bl-lg rounded-tr-lg bg-gray-400 text-base"
               title="Delete action"
               onClick={(e) => {
                 e.preventDefault();
@@ -161,7 +162,7 @@ const Action: React.FC<any> = (props) => {
 
         {forms.map((form, i) => (
           <Form
-            key={`${i}-${form.href}`}
+            key={`${i}-${form?.href ?? "nohref"}`}
             form={form}
             propName={props.actionName}
             interactionType="action"
@@ -171,5 +172,4 @@ const Action: React.FC<any> = (props) => {
     </details>
   );
 };
-
 export default Action;
