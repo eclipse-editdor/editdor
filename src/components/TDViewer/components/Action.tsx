@@ -11,7 +11,7 @@
  * SPDX-License-Identifier: EPL-2.0 OR W3C-20150513
  ********************************************************************************/
 import React, { useContext, useState } from "react";
-import { Trash2 } from "react-feather";
+import { Trash2, Copy } from "react-feather";
 import ediTDorContext from "../../../context/ediTDorContext";
 import {
   buildAttributeListObject,
@@ -22,17 +22,18 @@ import InfoIconWrapper from "../../base/InfoIconWrapper";
 import { getFormsTooltipContent } from "../../../utils/TooltipMapper";
 import Form from "./Form";
 import AddFormElement from "../base/AddFormElement";
+import { copyAffordance } from "../../../utils/copyAffordance";
 
 const alreadyRenderedKeys = ["title", "forms", "description"];
 
 const Action: React.FC<any> = (props) => {
   const context = useContext(ediTDorContext);
-
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const addFormDialog = React.useRef();
+  const addFormDialog = React.useRef<any>();
+
   const handleOpenAddFormDialog = () => {
-    addFormDialog.current.openModal();
+    addFormDialog.current?.openModal();
   };
 
   if (
@@ -54,35 +55,80 @@ const Action: React.FC<any> = (props) => {
     props.action,
     alreadyRenderedKeys
   );
-  const attributes = Object.keys(attributeListObject).map((x) => {
-    return (
-      <li key={x}>
-        {x} : {JSON.stringify(attributeListObject[x])}
-      </li>
-    );
-  });
+
+  const attributes = Object.keys(attributeListObject).map((x) => (
+    <li key={x}>
+      {x} : {JSON.stringify(attributeListObject[x])}
+    </li>
+  ));
 
   const handleDeleteAction = () => {
     context.removeOneOfAKindReducer("actions", props.actionName);
   };
 
+  const handleCopyAction = () => {
+    try {
+      const { updatedTD, newName } = copyAffordance({
+        parsedTD: context.parsedTD,
+        section: "actions",
+        originalName: props.actionName,
+        affordance: action,
+      });
+
+      context.updateOfflineTD(JSON.stringify(updatedTD, null, 2));
+
+      setIsExpanded(true);
+
+      setTimeout(() => {
+        document.getElementById(`action-${newName}`)?.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+      }, 100);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   return (
     <details
+      id={`action-${props.actionName}`}
       className="mb-1"
       open={isExpanded}
       onToggle={() => setIsExpanded(!isExpanded)}
     >
       <summary
-        className={`flex cursor-pointer items-center rounded-t-lg pl-2 text-xl font-bold text-white ${isExpanded ? "bg-gray-500" : ""}`}
+        className={`flex cursor-pointer items-center rounded-t-lg pl-2 text-xl font-bold text-white ${
+          isExpanded ? "bg-gray-500" : ""
+        }`}
       >
         <h3 className="flex-grow px-2">{action.title ?? props.actionName}</h3>
+
         {isExpanded && (
-          <button
-            className="flex h-10 w-10 items-center justify-center self-stretch rounded-bl-md rounded-tr-md bg-gray-400 text-base"
-            onClick={handleDeleteAction}
-          >
-            <Trash2 size={16} color="white" />
-          </button>
+          <>
+            <button
+              className="flex h-10 w-10 items-center justify-center self-stretch rounded-bl-lg bg-gray-400 text-base"
+              title="Copy action"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleCopyAction();
+              }}
+            >
+              <Copy size={16} color="white" />
+            </button>
+            <button
+              className="flex h-10 w-10 items-center justify-center self-stretch rounded-bl-lg rounded-tr-lg bg-gray-400 text-base"
+              title="Delete action"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleDeleteAction();
+              }}
+            >
+              <Trash2 size={16} color="white" />
+            </button>
+          </>
         )}
       </summary>
 
@@ -92,6 +138,7 @@ const Action: React.FC<any> = (props) => {
             {action.description}
           </div>
         )}
+
         <ul className="list-disc pl-6 text-base text-gray-300">{attributes}</ul>
 
         <div className="flex items-center justify-start pb-2 pt-2">
@@ -105,23 +152,24 @@ const Action: React.FC<any> = (props) => {
         </div>
 
         <AddFormElement onClick={handleOpenAddFormDialog} />
+
         <AddFormDialog
-          type={"action"}
+          type="action"
           interaction={action}
           interactionName={props.actionName}
           ref={addFormDialog}
         />
+
         {forms.map((form, i) => (
           <Form
-            key={`${i}-${form.href}`}
+            key={`${i}-${form?.href ?? "nohref"}`}
             form={form}
             propName={props.actionName}
-            interactionType={"action"}
-          ></Form>
+            interactionType="action"
+          />
         ))}
       </div>
     </details>
   );
 };
-
 export default Action;

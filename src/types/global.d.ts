@@ -55,4 +55,7 @@ declare global {
     quality?: number;
   }
 }
+
+export type InteractionKey = "actions" | "properties" | "events";
+
 export {};
