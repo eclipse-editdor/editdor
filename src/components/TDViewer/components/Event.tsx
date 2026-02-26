@@ -31,35 +31,19 @@ const Event: React.FC<any> = (props) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
   const addFormDialog = useRef<{ openModal: () => void }>(null);
+
   const handleOpenAddFormDialog = () => {
     addFormDialog.current?.openModal();
   };
 
-  if (
-    Object.keys(props.event).length === 0 &&
-    props.event.constructor !== Object
-  ) {
-    return (
-      <div className="text-3xl text-white">
-        Event could not be rendered because mandatory fields are missing.
-      </div>
-    );
-  }
-
   const event = props.event;
-  const forms = separateForms(props.event.forms);
+  const forms = separateForms(event.forms);
 
   const attributeListObject = buildAttributeListObject(
     { name: props.eventName },
-    props.event,
+    event,
     alreadyRenderedKeys
   );
-
-  const attributes = Object.keys(attributeListObject).map((x) => (
-    <li key={x}>
-      {x} : {JSON.stringify(attributeListObject[x])}
-    </li>
-  ));
 
   const handleDeleteEventClicked = () => {
     context.removeOneOfAKindReducer("events", props.eventName);
@@ -75,7 +59,6 @@ const Event: React.FC<any> = (props) => {
       });
 
       context.updateOfflineTD(JSON.stringify(updatedTD, null, 2));
-
       setIsExpanded(true);
 
       setTimeout(() => {
@@ -104,9 +87,8 @@ const Event: React.FC<any> = (props) => {
 
         {isExpanded && (
           <>
-            {/* COPY BUTTON */}
             <button
-              className="flex h-10 w-10 items-center justify-center self-stretch bg-gray-400 text-base"
+              className="flex h-10 w-10 items-center justify-center self-stretch bg-gray-400"
               title="Copy event"
               onClick={(e) => {
                 e.preventDefault();
@@ -117,9 +99,8 @@ const Event: React.FC<any> = (props) => {
               <Copy size={16} color="white" />
             </button>
 
-            {/* DELETE BUTTON */}
             <button
-              className="flex h-10 w-10 items-center justify-center self-stretch rounded-bl-md rounded-tr-md bg-gray-400 text-base"
+              className="flex h-10 w-10 items-center justify-center self-stretch rounded-bl-lg rounded-tr-lg bg-gray-400"
               title="Delete event"
               onClick={(e) => {
                 e.preventDefault();
@@ -140,19 +121,20 @@ const Event: React.FC<any> = (props) => {
           </div>
         )}
 
-        <ul className="list-disc pl-6 text-base text-gray-300">{attributes}</ul>
+        <ul className="list-disc pl-6 text-base text-gray-300">
+          {Object.entries(attributeListObject).map(([k, v]) => (
+            <li key={k}>
+              {k}: {JSON.stringify(v)}
+            </li>
+          ))}
+        </ul>
 
-        <div className="flex items-center justify-start pb-2 pt-2">
-          <InfoIconWrapper
-            className="flex-grow"
-            tooltip={getFormsTooltipContent()}
-            id="events"
-          >
-            <h4 className="pr-1 text-lg font-bold text-white">Forms</h4>
-          </InfoIconWrapper>
-        </div>
+        <InfoIconWrapper tooltip={getFormsTooltipContent()} id="events">
+          <h4 className="text-lg font-bold text-white">Forms</h4>
+        </InfoIconWrapper>
 
         <AddFormElement onClick={handleOpenAddFormDialog} />
+
         <AddFormDialog
           type="event"
           interaction={event}

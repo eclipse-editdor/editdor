@@ -12,12 +12,11 @@
  ********************************************************************************/
 
 import test from "node:test";
-
-type Section = "actions" | "properties" | "events";
+import type { InteractionKey } from "../types/global";
 
 interface CopyAffordanceParams {
   parsedTD: any;
-  section: Section;
+  section: InteractionKey;
   originalName: string;
   affordance: any;
 }
