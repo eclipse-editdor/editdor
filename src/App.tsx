@@ -163,10 +163,7 @@ const App: React.FC = () => {
 
   return (
     <main className="flex max-h-screen w-screen flex-col">
-      <AppHeader
-        onToggleJSON={handleToggleJSON}
-        isJSONVisible={doShowJSON}
-      />
+      <AppHeader onToggleJSON={handleToggleJSON} isJSONVisible={doShowJSON} />
 
       <div className="">
         <Container className="height-adjust flex flex-col md:flex-row">
@@ -197,7 +194,6 @@ const App: React.FC = () => {
               </Section>
             </>
           )}
-
         </Container>
       </div>
       <div className="fixed bottom-0 w-screen">
