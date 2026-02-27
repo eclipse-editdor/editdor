@@ -85,7 +85,7 @@ const CreateTd: React.FC<CreateTdProps> = ({
           throw new Error("CSV file is empty.");
         }
 
-        const data = parseCsv(csvContent, true);
+        const { data, warnings } = parseCsv(csvContent, true);
 
         const parsed = mapCsvToProperties(data);
         if (!parsed || Object.keys(parsed).length === 0) {
@@ -93,7 +93,16 @@ const CreateTd: React.FC<CreateTdProps> = ({
         }
 
         setProperties(parsed);
-        setError({ open: false, message: "" });
+
+        // Display warnings if any
+        if (warnings.length > 0) {
+          const warningMessage = warnings
+            .map((w) => `Row ${w.row}, column "${w.column}": ${w.message}`)
+            .join("; ");
+          setError({ open: true, message: `Warnings: ${warningMessage}` });
+        } else {
+          setError({ open: false, message: "" });
+        }
       } catch (err) {
         setProperties({});
         setError({

@@ -19,9 +19,9 @@ describe("parseCsv", () => {
     const csvContent = `name,type,modbus:address,modbus:entity,modbus:unitID,modbus:quantity,modbus:zeroBasedAddressing,modbus:function,modbus:mostSignificantByte,modbus:mostSignificantWord,href
 temperature,number,40001,coil,1,2,false,03,true,true,/temperature`;
 
-    const result = parseCsv(csvContent, true);
+    const { data, warnings } = parseCsv(csvContent, true);
 
-    expect(result).toEqual([
+    expect(data).toEqual([
       {
         name: "temperature",
         type: "number",
@@ -36,6 +36,13 @@ temperature,number,40001,coil,1,2,false,03,true,true,/temperature`;
         href: "/temperature",
       },
     ]);
+    expect(warnings).toEqual([
+      {
+        row: 2,
+        column: "modbus:entity",
+        message: 'Modbus entity "coil" has incorrect casing; expected "Coil"',
+      },
+    ]);
   });
 
   test("should handle empty CSV content", () => {
@@ -45,14 +52,14 @@ temperature,number,40001,coil,1,2,false,03,true,true,/temperature`;
   test("should trim header names and values", () => {
     const csv = ` name , type , modbus:address , modbus:entity , href
   temperature  , number , 40001 , coil  , /temperature `;
-    const result = parseCsv(csv, true);
-    expect(result[0].name).toBe("temperature");
-    expect(result[0].type).toBe("number");
-    expect(result[0]["modbus:address"]).toBe("40001");
-    expect(result[0]["modbus:entity"]).toBe("coil");
-    expect(result[0].href).toBe("/temperature");
+    const { data } = parseCsv(csv, true);
+    expect(data[0].name).toBe("temperature");
+    expect(data[0].type).toBe("number");
+    expect(data[0]["modbus:address"]).toBe("40001");
+    expect(data[0]["modbus:entity"]).toBe("coil");
+    expect(data[0].href).toBe("/temperature");
     // Header keys trimmed (no spaces around)
-    expect(Object.keys(result[0])).toContain("name");
+    expect(Object.keys(data[0])).toContain("name");
   });
 
   test("should remove rows that are entirely empty or whitespace-only", () => {
@@ -64,65 +71,65 @@ temperature,number,40001,coil,/temperature
 
 humidity,number,40003,holding,/humidity
 `;
-    const result = parseCsv(csv, true);
-    expect(result.length).toBe(2);
-    expect(result[0].name).toBe("temperature");
-    expect(result[1].name).toBe("humidity");
+    const { data } = parseCsv(csv, true);
+    expect(data.length).toBe(2);
+    expect(data[0].name).toBe("temperature");
+    expect(data[1].name).toBe("humidity");
   });
 
   test("should keep empty cells as empty strings", () => {
     const csv = `name,type,modbus:address,modbus:entity,href,unit,minimum,maximum
 temperature,number,40001,coil,/temperature,,,`;
-    const result = parseCsv(csv, true);
-    expect(result[0].unit).toBe(""); // transform sets null/undefined -> ""
-    expect(result[0].minimum).toBe("");
-    expect(result[0].maximum).toBe("");
+    const { data } = parseCsv(csv, true);
+    expect(data[0].unit).toBe(""); // transform sets null/undefined -> ""
+    expect(data[0].minimum).toBe("");
+    expect(data[0].maximum).toBe("");
   });
 
   test("should ignore completely blank trailing row", () => {
     const csv = `name,type,modbus:address,modbus:entity,href
 temperature,number,40001,coil,/temperature
 `;
-    const result = parseCsv(csv, true);
-    expect(result.length).toBe(1);
+    const { data } = parseCsv(csv, true);
+    expect(data.length).toBe(1);
   });
 
   test("should parse multiple rows preserving string types (dynamicTyping=false)", () => {
     const csv = `name,type,modbus:address,modbus:entity,href
 temperature,number,40001,coil,/temperature
 pressure,number,40002,coil,/pressure`;
-    const result = parseCsv(csv, true);
-    expect(result[0]["modbus:address"]).toBe("40001");
-    expect(typeof result[0]["modbus:address"]).toBe("string");
+    const { data } = parseCsv(csv, true);
+    expect(data[0]["modbus:address"]).toBe("40001");
+    expect(typeof data[0]["modbus:address"]).toBe("string");
   });
 
   test("should throw a descriptive error for malformed quoted fields", () => {
     // Unmatched quote will trigger Papa parse error of type "Quotes"
     const csv = `name,type,modbus:address,modbus:entity,href
 "temperature,number,40001,coil,/temperature`;
-    expect(() => parseCsv(csv, true)).toThrow(/CSV parse failed:/);
+    expect(() => parseCsv(csv, true)).toThrow(/Row/);
   });
 
   test("should throw error on parsing a row with missing columns", () => {
     const csv = `name,type,modbus:address,modbus:entity,href,unit
 temperature,number,40001,coil,/temperature`;
-    expect(() => parseCsv(csv, true)).toThrow(/CSV parse failed:/); // absent header cell => undefined key
+    expect(() => parseCsv(csv, true)).toThrow(/Row/); // absent header cell => undefined key
   });
 
   test("should filter out rows where all values become empty after trim", () => {
     const csv = `name,type,modbus:address,modbus:entity,href
 temperature,number,40001,coil,/temperature
- , , , , 
+ , , , ,
 humidity,number,40003,holding,/humidity`;
-    const result = parseCsv(csv, true);
-    expect(result.map((r) => r.name)).toEqual(["temperature", "humidity"]);
+    const { data } = parseCsv(csv, true);
+    expect(data.map((r) => r.name)).toEqual(["temperature", "humidity"]);
   });
 
   test("should handle values consisting only of whitespace and convert them to empty strings", () => {
     const csv = `name,type,modbus:address,modbus:entity,href,unit
 temperature,number,40001,coil,/temperature,   `;
-    const result = parseCsv(csv, true);
-    expect(result[0].unit).toBe("");
+    const { data } = parseCsv(csv, true);
+    expect(data[0].unit).toBe("");
   });
 
   test("should not include a row where every field resolves to empty string", () => {
@@ -130,35 +137,83 @@ temperature,number,40001,coil,/temperature,   `;
 temperature,number,40001,coil,/temperature
 ,,,,
 `;
-    const result = parseCsv(csv, true);
-    expect(result.length).toBe(1);
-    expect(result[0].name).toBe("temperature");
+    const { data } = parseCsv(csv, true);
+    expect(data.length).toBe(1);
+    expect(data[0].name).toBe("temperature");
   });
 
   test("should preserve empty href and still keep the row", () => {
     const csv = `name,type,modbus:address,modbus:entity,href
 temperature,number,40001,coil,`;
-    const result = parseCsv(csv, true);
-    expect(result[0].href).toBe("");
+    const { data } = parseCsv(csv, true);
+    expect(data[0].href).toBe("");
   });
 
   test("should parse header with trailing delimiter producing empty last column", () => {
     const csv = `name,type,modbus:address,modbus:entity,href,
 temperature,number,40001,coil,/temperature,`;
-    const result = parseCsv(csv, true);
+    const { data } = parseCsv(csv, true);
     // Last header trimmed to "" becomes ignored by Papa (no field name) or blank key
     // Ensure primary fields still parsed
-    expect(result[0].name).toBe("temperature");
+    expect(data[0].name).toBe("temperature");
   });
 
   test("should handle mixture of populated and partially empty rows", () => {
     const csv = `name,type,modbus:address,modbus:entity,href,unit
 temperature,number,40001,coil,/temperature,celsius
 humidity,number,40003,holding,/humidity,`;
-    const result = parseCsv(csv, true);
-    expect(result.length).toBe(2);
-    expect(result[0].unit).toBe("celsius");
-    expect(result[1].unit).toBe("");
+    const { data } = parseCsv(csv, true);
+    expect(data.length).toBe(2);
+    expect(data[0].unit).toBe("celsius");
+    expect(data[1].unit).toBe("");
+  });
+
+  test("should collect warnings for invalid types", () => {
+    const csv = `name,type,modbus:address,modbus:entity,href
+temperature,invalid_type,40001,HoldingRegister,/temperature`;
+    const { data, warnings } = parseCsv(csv, true);
+    expect(data.length).toBe(1);
+    expect(warnings).toEqual([
+      {
+        row: 2,
+        column: "type",
+        message: 'Invalid type "invalid_type"',
+      },
+    ]);
+  });
+
+  test("should collect warnings for invalid modbus entities", () => {
+    const csv = `name,type,modbus:address,modbus:entity,href
+temperature,number,40001,InvalidEntity,/temperature`;
+    const { data, warnings } = parseCsv(csv, true);
+    expect(data.length).toBe(1);
+    expect(warnings).toEqual([
+      {
+        row: 2,
+        column: "modbus:entity",
+        message: 'Invalid modbus entity "InvalidEntity"',
+      },
+    ]);
+  });
+
+  test("should collect multiple warnings", () => {
+    const csv = `name,type,modbus:address,modbus:entity,href
+temperature,invalid_type,40001,InvalidEntity,/temperature
+humidity,string,40002,HoldingRegister,/humidity`;
+    const { data, warnings } = parseCsv(csv, true);
+    expect(data.length).toBe(2);
+    expect(warnings).toEqual([
+      {
+        row: 2,
+        column: "type",
+        message: 'Invalid type "invalid_type"',
+      },
+      {
+        row: 2,
+        column: "modbus:entity",
+        message: 'Invalid modbus entity "InvalidEntity"',
+      },
+    ]);
   });
 });
 
