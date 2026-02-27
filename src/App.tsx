@@ -19,10 +19,8 @@ import "./App.css";
 import AppFooter from "./components/App/AppFooter";
 import AppHeader from "./components/App/AppHeader";
 import { Container, Section, Bar } from "@column-resizer/react";
-import { RefreshCw } from "react-feather";
 import { decompressSharedTd } from "./share";
 import { editor } from "monaco-editor";
-import BaseButton from "./components/TDViewer/base/BaseButton";
 import ErrorDialog from "./components/Dialogs/ErrorDialog";
 
 const GlobalStateWrapper = () => {
@@ -46,7 +44,7 @@ const App: React.FC = () => {
   const context = useContext(ediTDorContext);
 
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
-  const [doShowJSON, setDoShowJSON] = useState(false);
+  const [doShowJSON, setDoShowJSON] = useState(true);
   const [customBreakpointsState, setCustomBreakpointsState] = useState(0);
   const tdViewerRef = useRef<HTMLDivElement>(null);
 
@@ -165,11 +163,16 @@ const App: React.FC = () => {
 
   return (
     <main className="flex max-h-screen w-screen flex-col">
-      <AppHeader></AppHeader>
+      <AppHeader onToggleJSON={handleToggleJSON} isJSONVisible={doShowJSON} />
 
       <div className="">
         <Container className="height-adjust flex flex-col md:flex-row">
-          <Section minSize={550} className="w-full min-w-16 md:w-7/12">
+          <Section
+            minSize={550}
+            className={`w-full min-w-16 ${
+              doShowJSON ? "md:w-7/12" : "md:w-full"
+            }`}
+          >
             <div ref={tdViewerRef} className="h-full w-full">
               <TDViewer
                 onUndo={handleUndo}
@@ -179,23 +182,24 @@ const App: React.FC = () => {
             </div>
           </Section>
 
-          <Bar
-            size={7.5}
-            className="cursor-col-resize bg-gray-300 hover:bg-blue-500"
-          />
+          {doShowJSON && (
+            <>
+              <Bar
+                size={doShowJSON ? 7.5 : 0}
+                className={`cursor-col-resize bg-gray-300 hover:bg-blue-500 ${
+                  doShowJSON ? "" : "hidden"
+                }`}
+              />
 
-          <Section className="w-full md:w-5/12">
-            <JsonEditor editorRef={editorRef} />
-          </Section>
-
-          <BaseButton
-            type="button"
-            className="fixed bottom-12 right-2 z-10 rounded-full bg-blue-500 p-4"
-            onClick={handleToggleJSON}
-            variant="empty"
-          >
-            <RefreshCw color="white" />
-          </BaseButton>
+              <Section
+                className={`w-full ${
+                  doShowJSON ? "md:w-5/12" : "md:w-0"
+                } overflow-hidden`}
+              >
+                {doShowJSON && <JsonEditor editorRef={editorRef} />}
+              </Section>
+            </>
+          )}
         </Container>
       </div>
       <div className="fixed bottom-0 w-screen">
