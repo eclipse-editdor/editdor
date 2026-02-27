@@ -47,7 +47,7 @@ interface JsonSchemaEntry {
 const JsonEditor: React.FC<JsonEditorProps> = ({ editorRef }) => {
   const context = useContext(ediTDorContext);
 
-  const jsonIndentation = context.settings?.jsonIndentation ?? 2;
+  const jsonIndentation = context.jsonIndentation ?? 2;
   const [schemas] = useState<JsonSchemaEntry[]>([]);
   const [proxy, setProxy] = useState<any>(undefined);
   const editorInstance = useRef<editor.IStandaloneCodeEditor | null>(null);
