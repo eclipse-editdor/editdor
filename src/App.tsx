@@ -185,12 +185,18 @@ const App: React.FC = () => {
           {doShowJSON && (
             <>
               <Bar
-                size={7.5}
-                className="cursor-col-resize bg-gray-300 hover:bg-blue-500"
+                size={doShowJSON ? 7.5 : 0}
+                className={`cursor-col-resize bg-gray-300 hover:bg-blue-500 ${
+                  doShowJSON ? "" : "hidden"
+                }`}
               />
 
-              <Section className="w-full md:w-5/12">
-                <JsonEditor editorRef={editorRef} />
+              <Section
+                className={`w-full ${
+                  doShowJSON ? "md:w-5/12" : "md:w-0"
+                } overflow-hidden`}
+              >
+                {doShowJSON && <JsonEditor editorRef={editorRef} />}
               </Section>
             </>
           )}
