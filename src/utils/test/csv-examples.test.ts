@@ -1,16 +1,16 @@
 import { describe, it, expect } from "vitest";
-import { parseCsv } from "../src/utils/parser";
+import { parseCsv } from "../parser";
 import fs from "fs";
 import path from "path";
 
 describe("CSV example files", () => {
   const validCsv = fs.readFileSync(
-    path.join(__dirname, "../doc/examples/csv/valid.csv"),
+    path.join(__dirname, "fixtures", "valid.csv"),
     "utf-8"
   );
 
   const invalidCsv = fs.readFileSync(
-    path.join(__dirname, "../doc/examples/csv/invalid.csv"),
+    path.join(__dirname, "fixtures", "invalid.csv"),
     "utf-8"
   );
 
