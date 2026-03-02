@@ -15,6 +15,7 @@ import React, {
   useCallback,
   useContext,
   useImperativeHandle,
+  useState,
 } from "react";
 import ReactDOM from "react-dom";
 import ediTDorContext from "../../context/ediTDorContext";
@@ -41,6 +42,14 @@ interface AddLinkTdDialogProps {
 const AddLinkTdDialog = forwardRef<AddLinkTdDialogRef, AddLinkTdDialogProps>(
   (props, ref) => {
     const context = useContext(ediTDorContext);
+
+    const [formData, setFormData] = useState<Link>(() => ({
+      href: "",
+      rel: "",
+      type: "",
+    }));
+    const [errorMessage, setErrorMessage] = useState<string>("");
+
     const [display, setDisplay] = React.useState<boolean>(() => {
       return false;
     });
@@ -80,9 +89,7 @@ const AddLinkTdDialog = forwardRef<AddLinkTdDialogRef, AddLinkTdDialogProps>(
     };
 
     const addLinksToTd = (link: Link): void => {
-      // clone instead of mutating original TD
       const updatedTd = structuredClone(context.parsedTD);
-      // initialize links array if missing
       if (!Array.isArray(updatedTd.links)) {
         updatedTd.links = [];
       }
@@ -101,8 +108,13 @@ const AddLinkTdDialog = forwardRef<AddLinkTdDialogRef, AddLinkTdDialogProps>(
       try {
         const res = await fileTdService.readFromFile();
 
-        (document.getElementById("link-href") as HTMLInputElement).value =
-          `./${res.fileName}`;
+        setFormData((prev) => ({
+          ...prev,
+          href: `./${res.fileName}`,
+        }));
+
+        setErrorMessage("");
+
         setCurrentLinkedTd(
           res.fileHandle ? res.fileHandle : JSON.parse(res.td)
         );
@@ -155,6 +167,13 @@ const AddLinkTdDialog = forwardRef<AddLinkTdDialogRef, AddLinkTdDialogProps>(
             id="rel"
             className="w-full rounded-md border-2 border-gray-600 bg-gray-600 p-2 text-white focus:border-blue-500 focus:outline-none sm:text-sm"
             placeholder="relation name"
+            value={formData.rel}
+            onChange={(e) =>
+              setFormData({
+                ...formData,
+                rel: e.target.value,
+              })
+            }
           />
           <datalist id="relationType">
             <RelationType></RelationType>
@@ -167,7 +186,7 @@ const AddLinkTdDialog = forwardRef<AddLinkTdDialogRef, AddLinkTdDialogProps>(
             htmlFor="link-href"
             className="pl-2 pr-2 text-sm font-medium text-gray-400"
           >
-            Target ressource:
+            Target resource:
           </label>
 
           <BaseButton
@@ -194,12 +213,21 @@ const AddLinkTdDialog = forwardRef<AddLinkTdDialogRef, AddLinkTdDialogProps>(
               type="text"
               name="link-href"
               id="link-href"
-              className="rounded-md border-2 border-gray-600 bg-gray-600 p-2 text-white focus:border-blue-500 focus:outline-none sm:text-sm"
-              placeholder="The target ressource"
-              onChange={() => {
-                clearHrefErrorMessage();
+              className={`rounded-md border-2 bg-gray-600 p-2 text-white focus:outline-none sm:text-sm ${
+                errorMessage
+                  ? "border-red-400"
+                  : "border-gray-600 focus:border-blue-500"
+              }`}
+              placeholder="The target resource"
+              onChange={(e) => {
+                setFormData({
+                  ...formData,
+                  href: e.target.value,
+                });
+                setErrorMessage("");
               }}
-              disabled={linkingMethod !== "url"}
+              readOnly={linkingMethod !== "url"}
+              value={formData.href}
             />
             {linkingMethod === "upload" && (
               <BaseButton
@@ -213,10 +241,11 @@ const AddLinkTdDialog = forwardRef<AddLinkTdDialogRef, AddLinkTdDialogProps>(
               </BaseButton>
             )}
           </div>
-          <span
-            id="link-href-info"
-            className="pl-2 text-xs text-red-400"
-          ></span>
+          {errorMessage && (
+            <span id="link-href-info" className="pl-2 text-xs text-red-400">
+              {errorMessage}
+            </span>
+          )}
           <div>
             <label
               htmlFor="type"
@@ -231,6 +260,13 @@ const AddLinkTdDialog = forwardRef<AddLinkTdDialogRef, AddLinkTdDialogProps>(
               id="type"
               className="w-full rounded-md border-2 border-gray-600 bg-gray-600 p-2 text-white focus:border-blue-500 focus:outline-none sm:text-sm"
               placeholder="media type"
+              value={formData.type}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  type: e.target.value,
+                })
+              }
             />
             <datalist id="mediaType">
               <option value="application/td+json" />
@@ -245,37 +281,30 @@ const AddLinkTdDialog = forwardRef<AddLinkTdDialogRef, AddLinkTdDialogProps>(
 
     const handleAddLink = () => {
       if (!context.isValidJSON) {
-        showHrefErrorMessage("Can't add link. TD is malformed");
+        setErrorMessage("Can't add link. TD is malformed");
         return;
       }
 
       const linkedTd: Record<string, any> = {};
 
       const link: Link = {
-        href:
-          (
-            document.getElementById("link-href") as HTMLInputElement
-          ).value.trim() || "/",
+        href: formData.href.trim(),
       };
-      const rel = (
-        document.getElementById("rel") as HTMLInputElement
-      ).value.trim();
-      const type = (
-        document.getElementById("type") as HTMLInputElement
-      ).value.trim();
 
-      if (rel) link.rel = rel;
-      if (type) link.type = type;
+      if (formData.rel) link.rel = formData.rel.trim();
+      if (formData.type) link.type = formData.type.trim();
 
       let isValidUrl = true;
+      let url: URL | null = null;
       try {
-        var url = new URL(link.href);
+        url = new URL(link.href);
       } catch (_) {
         isValidUrl = false;
       }
       if (
         linkingMethod === "url" &&
         isValidUrl &&
+        url &&
         (url.protocol === "http:" || url.protocol === "https:")
       ) {
         try {
@@ -285,7 +314,7 @@ const AddLinkTdDialog = forwardRef<AddLinkTdDialogRef, AddLinkTdDialogProps>(
           if (
             httpRequest
               .getResponseHeader("content-type")
-              .includes("application/td+json")
+              ?.includes("application/td+json")
           ) {
             const thingDescription = httpRequest.response;
             let parsedTd = JSON.parse(thingDescription);
@@ -301,9 +330,9 @@ const AddLinkTdDialog = forwardRef<AddLinkTdDialogRef, AddLinkTdDialogProps>(
       }
 
       if (link.href === "") {
-        showHrefErrorMessage("The href field is mandatory ...");
+        setErrorMessage("The href field is mandatory ...");
       } else if (checkIfLinkExists(link)) {
-        showHrefErrorMessage(
+        setErrorMessage(
           "A Link with the target Thing Description already exists ..."
         );
       } else {
@@ -322,7 +351,7 @@ const AddLinkTdDialog = forwardRef<AddLinkTdDialogRef, AddLinkTdDialogProps>(
           rightButton={"Add"}
           children={children}
           title={`Add Link `}
-          description={`Tell us how this ${tdJSON.title} can interact with other ressources`}
+          description={`Tell us how this ${tdJSON.title} can interact with other resources`}
         />,
         document.getElementById("modal-root") as HTMLElement
       );
@@ -331,25 +360,6 @@ const AddLinkTdDialog = forwardRef<AddLinkTdDialogRef, AddLinkTdDialogProps>(
     return null;
   }
 );
-
-const showHrefErrorMessage = (msg) => {
-  (document.getElementById("link-href-info") as HTMLElement).textContent = msg;
-  (document.getElementById("link-href") as HTMLElement).classList.remove(
-    "border-gray-600"
-  );
-  (document.getElementById("link-href") as HTMLElement).classList.add(
-    "border-red-400"
-  );
-};
-
-const clearHrefErrorMessage = () => {
-  (document.getElementById("link-href") as HTMLElement).classList.add(
-    "border-gray-600"
-  );
-  (document.getElementById("link-href") as HTMLElement).classList.remove(
-    "border-red-400"
-  );
-};
 
 AddLinkTdDialog.displayName = "AddLinkTdDialog";
 export default AddLinkTdDialog;
