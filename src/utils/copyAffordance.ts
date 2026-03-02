@@ -10,8 +10,6 @@
  *
  * SPDX-License-Identifier: EPL-2.0 OR W3C-20150513
  ********************************************************************************/
-
-import test from "node:test";
 import type { InteractionKey } from "../types/global";
 
 interface CopyAffordanceParams {

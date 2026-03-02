@@ -10,8 +10,7 @@
  *
  * SPDX-License-Identifier: EPL-2.0 OR W3C-20150513
  ********************************************************************************/
-import React, { useContext, useState } from "react";
-import { Trash2, Copy } from "react-feather";
+import React, { useContext, useState, useRef } from "react";
 import ediTDorContext from "../../../context/ediTDorContext";
 import {
   buildAttributeListObject,
@@ -23,140 +22,95 @@ import { getFormsTooltipContent } from "../../../utils/TooltipMapper";
 import Form from "./Form";
 import AddFormElement from "../base/AddFormElement";
 import { copyAffordance } from "../../../utils/copyAffordance";
-
+import AffordanceButtons from "./AffordanceButtons";
 const alreadyRenderedKeys = ["title", "forms", "description"];
 
-const Action: React.FC<any> = (props) => {
+interface IAction {
+  action: any;
+  actionName: string;
+}
+const Action: React.FC<IAction> = ({ action, actionName }) => {
   const context = useContext(ediTDorContext);
   const [isExpanded, setIsExpanded] = useState(false);
-
-  const addFormDialog = React.useRef<any>();
-
-  const handleOpenAddFormDialog = () => {
-    addFormDialog.current?.openModal();
-  };
-
-  if (
-    Object.keys(props.action).length === 0 &&
-    props.action.constructor !== Object
-  ) {
-    return (
-      <div className="text-3xl text-white">
-        Action could not be rendered because mandatory fields are missing.
-      </div>
-    );
-  }
-
-  const action = props.action;
-  const forms = separateForms(props.action.forms);
-
+  const addFormDialog = useRef<{ openModal: () => void }>(null);
+  const forms = separateForms(action.forms);
   const attributeListObject = buildAttributeListObject(
-    { name: props.actionName },
-    props.action,
+    { name: actionName },
+    action,
     alreadyRenderedKeys
   );
-
-  const attributes = Object.keys(attributeListObject).map((x) => (
-    <li key={x}>
-      {x} : {JSON.stringify(attributeListObject[x])}
-    </li>
-  ));
-
-  const handleDeleteAction = () => {
-    context.removeOneOfAKindReducer("actions", props.actionName);
+  const handleDelete = () => {
+    context.removeOneOfAKindReducer("actions", actionName);
   };
-
-  const handleCopyAction = () => {
-    try {
-      const { updatedTD, newName } = copyAffordance({
-        parsedTD: context.parsedTD,
-        section: "actions",
-        originalName: props.actionName,
-        affordance: action,
-      });
-
-      context.updateOfflineTD(JSON.stringify(updatedTD, null, 2));
-
-      setIsExpanded(true);
-
-      setTimeout(() => {
-        document.getElementById(`action-${newName}`)?.scrollIntoView({
-          behavior: "smooth",
-          block: "center",
-        });
-      }, 100);
-    } catch (e) {
-      console.error(e);
-    }
+  const handleCopy = () => {
+    const { updatedTD, newName } = copyAffordance({
+      parsedTD: context.parsedTD,
+      section: "actions",
+      originalName: actionName,
+      affordance: action,
+    });
+    context.updateOfflineTD(JSON.stringify(updatedTD, null, 2));
+    setIsExpanded(true);
+    setTimeout(() => {
+      document
+        .getElementById(`action-${newName}`)
+        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 100);
   };
 
   return (
     <details
-      id={`action-${props.actionName}`}
-      className="mb-1"
+      id={`action-${actionName}`}
+      className={`mb-2 ${isExpanded ? "overflow-hidden rounded-lg bg-gray-500" : ""}`}
       open={isExpanded}
       onToggle={() => setIsExpanded(!isExpanded)}
     >
-      <summary
-        className={`flex cursor-pointer items-center rounded-t-lg pl-2 text-xl font-bold text-white ${
-          isExpanded ? "bg-gray-500" : ""
-        }`}
-      >
-        <h3 className="flex-grow px-2">{action.title ?? props.actionName}</h3>
+      <summary className="flex cursor-pointer items-center py-1 pl-2 text-xl font-bold text-white">
+        <h3 className="flex-grow px-2">{action.title ?? actionName}</h3>
 
         {isExpanded && (
-          <>
-            <button
-              className="flex h-10 w-10 items-center justify-center self-stretch rounded-bl-lg bg-gray-400 text-base"
-              title="Copy action"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                handleCopyAction();
-              }}
-            >
-              <Copy size={16} color="white" />
-            </button>
-            <button
-              className="flex h-10 w-10 items-center justify-center self-stretch rounded-bl-lg rounded-tr-lg bg-gray-400 text-base"
-              title="Delete action"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                handleDeleteAction();
-              }}
-            >
-              <Trash2 size={16} color="white" />
-            </button>
-          </>
+          <AffordanceButtons
+            copyTitle="Copy action"
+            deleteTitle="Delete action"
+            onCopy={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handleCopy();
+            }}
+            onDelete={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handleDelete();
+            }}
+          />
         )}
       </summary>
 
-      <div className="mb-4 rounded-b-lg bg-gray-500 px-2 pb-4">
+      <div className="px-2 pb-4">
         {action.description && (
           <div className="px-2 pb-2 text-lg text-gray-400">
             {action.description}
           </div>
         )}
 
-        <ul className="list-disc pl-6 text-base text-gray-300">{attributes}</ul>
+        <ul className="list-disc pl-6 text-base text-gray-300">
+          {Object.entries(attributeListObject).map(([k, v]) => (
+            <li key={k}>
+              {k}: {JSON.stringify(v)}
+            </li>
+          ))}
+        </ul>
 
-        <div className="flex items-center justify-start pb-2 pt-2">
-          <InfoIconWrapper
-            className="flex-grow"
-            tooltip={getFormsTooltipContent()}
-            id="actions"
-          >
-            <h4 className="pr-1 text-lg font-bold text-white">Forms</h4>
-          </InfoIconWrapper>
-        </div>
+        <InfoIconWrapper tooltip={getFormsTooltipContent()} id="actions">
+          <h4 className="text-lg font-bold text-white">Forms</h4>
+        </InfoIconWrapper>
 
-        <AddFormElement onClick={handleOpenAddFormDialog} />
+        <AddFormElement onClick={() => addFormDialog.current?.openModal()} />
 
         <AddFormDialog
           type="action"
           interaction={action}
-          interactionName={props.actionName}
+          interactionName={actionName}
           ref={addFormDialog}
         />
 
@@ -164,7 +118,7 @@ const Action: React.FC<any> = (props) => {
           <Form
             key={`${i}-${form?.href ?? "nohref"}`}
             form={form}
-            propName={props.actionName}
+            propName={actionName}
             interactionType="action"
           />
         ))}
@@ -172,4 +126,5 @@ const Action: React.FC<any> = (props) => {
     </details>
   );
 };
+
 export default Action;

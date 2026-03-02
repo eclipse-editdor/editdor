@@ -11,7 +11,6 @@
  * SPDX-License-Identifier: EPL-2.0 OR W3C-20150513
  ********************************************************************************/
 import React, { useContext, useState, useRef } from "react";
-import { Trash2, Copy } from "react-feather";
 import ediTDorContext from "../../../context/ediTDorContext";
 import {
   buildAttributeListObject,
@@ -23,104 +22,73 @@ import { getFormsTooltipContent } from "../../../utils/TooltipMapper";
 import Form from "./Form";
 import AddFormElement from "../base/AddFormElement";
 import { copyAffordance } from "../../../utils/copyAffordance";
-
+import AffordanceButtons from "./AffordanceButtons";
 const alreadyRenderedKeys = ["title", "forms", "description"];
-
-const Event: React.FC<any> = (props) => {
+interface IEvent {
+  event: any;
+  eventName: string;
+}
+const Event: React.FC<IEvent> = ({ event, eventName }) => {
   const context = useContext(ediTDorContext);
   const [isExpanded, setIsExpanded] = useState(false);
-
   const addFormDialog = useRef<{ openModal: () => void }>(null);
-
-  const handleOpenAddFormDialog = () => {
-    addFormDialog.current?.openModal();
-  };
-
-  const event = props.event;
   const forms = separateForms(event.forms);
-
   const attributeListObject = buildAttributeListObject(
-    { name: props.eventName },
+    { name: eventName },
     event,
     alreadyRenderedKeys
   );
-
-  const handleDeleteEventClicked = () => {
-    context.removeOneOfAKindReducer("events", props.eventName);
+  const handleDelete = () => {
+    context.removeOneOfAKindReducer("events", eventName);
   };
-
-  const handleCopyEvent = () => {
-    try {
-      const { updatedTD, newName } = copyAffordance({
-        parsedTD: context.parsedTD,
-        section: "events",
-        originalName: props.eventName,
-        affordance: event,
-      });
-
-      context.updateOfflineTD(JSON.stringify(updatedTD, null, 2));
-      setIsExpanded(true);
-
-      setTimeout(() => {
-        document
-          .getElementById(`event-${newName}`)
-          ?.scrollIntoView({ behavior: "smooth", block: "center" });
-      }, 100);
-    } catch (e) {
-      console.error(e);
-    }
+  const handleCopy = () => {
+    const { updatedTD, newName } = copyAffordance({
+      parsedTD: context.parsedTD,
+      section: "events",
+      originalName: eventName,
+      affordance: event,
+    });
+    context.updateOfflineTD(JSON.stringify(updatedTD, null, 2));
+    setIsExpanded(true);
+    setTimeout(() => {
+      document
+        .getElementById(`event-${newName}`)
+        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 100);
   };
 
   return (
     <details
-      id={`event-${props.eventName}`}
-      className="mb-1"
+      id={`event-${eventName}`}
+      className={`mb-2 ${isExpanded ? "overflow-hidden rounded-lg bg-gray-500" : ""}`}
       open={isExpanded}
       onToggle={() => setIsExpanded(!isExpanded)}
     >
-      <summary
-        className={`flex cursor-pointer items-center rounded-t-lg pl-2 text-xl font-bold text-white ${
-          isExpanded ? "bg-gray-500" : ""
-        }`}
-      >
-        <div className="flex-grow px-2">{event.title ?? props.eventName}</div>
-
+      <summary className="flex cursor-pointer items-center py-1 pl-2 text-xl font-bold text-white">
+        <div className="flex-grow px-2">{event.title ?? eventName}</div>
         {isExpanded && (
-          <>
-            <button
-              className="flex h-10 w-10 items-center justify-center self-stretch bg-gray-400"
-              title="Copy event"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                handleCopyEvent();
-              }}
-            >
-              <Copy size={16} color="white" />
-            </button>
-
-            <button
-              className="flex h-10 w-10 items-center justify-center self-stretch rounded-bl-lg rounded-tr-lg bg-gray-400"
-              title="Delete event"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                handleDeleteEventClicked();
-              }}
-            >
-              <Trash2 size={16} color="white" />
-            </button>
-          </>
+          <AffordanceButtons
+            copyTitle="Copy event"
+            deleteTitle="Delete event"
+            onCopy={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handleCopy();
+            }}
+            onDelete={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handleDelete();
+            }}
+          />
         )}
       </summary>
-
-      <div className="mb-4 rounded-b-lg bg-gray-500 px-2 pb-4">
+      <div className="px-2 pb-4">
         {event.description && (
           <div className="px-2 pb-2 text-lg text-gray-400">
             {event.description}
           </div>
         )}
-
         <ul className="list-disc pl-6 text-base text-gray-300">
           {Object.entries(attributeListObject).map(([k, v]) => (
             <li key={k}>
@@ -128,25 +96,21 @@ const Event: React.FC<any> = (props) => {
             </li>
           ))}
         </ul>
-
         <InfoIconWrapper tooltip={getFormsTooltipContent()} id="events">
           <h4 className="text-lg font-bold text-white">Forms</h4>
         </InfoIconWrapper>
-
-        <AddFormElement onClick={handleOpenAddFormDialog} />
-
+        <AddFormElement onClick={() => addFormDialog.current?.openModal()} />
         <AddFormDialog
           type="event"
           interaction={event}
-          interactionName={props.eventName}
+          interactionName={eventName}
           ref={addFormDialog}
         />
-
         {forms.map((form, i) => (
           <Form
             key={`${i}-${form.href}`}
             form={form}
-            propName={props.eventName}
+            propName={eventName}
             interactionType="event"
           />
         ))}
