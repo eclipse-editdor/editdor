@@ -44,12 +44,12 @@ interface AddLinkTdDialogProps {
 const AddLinkTdDialog = forwardRef<AddLinkTdDialogRef, AddLinkTdDialogProps>(
   (props, ref) => {
     const context = useContext(ediTDorContext);
-    const [formData,setFormData]=useState<Link>({
-      href:"",
-      rel:"",
-      type:""
+    const [formData, setFormData] = useState<Link>({
+      href: "",
+      rel: "",
+      type: "",
     });
-    const [errorMessage,setErrorMessage]=useState<string>("");
+    const [errorMessage, setErrorMessage] = useState<string>("");
     const [display, setDisplay] = React.useState<boolean>(() => {
       return false;
     });
@@ -89,9 +89,8 @@ const AddLinkTdDialog = forwardRef<AddLinkTdDialogRef, AddLinkTdDialogProps>(
     };
 
     const addLinksToTd = (link: Link): void => {
-    
       const updatedTd = structuredClone(context.parsedTD);
-     
+
       if (!Array.isArray(updatedTd.links)) {
         updatedTd.links = [];
       }
@@ -168,10 +167,12 @@ const AddLinkTdDialog = forwardRef<AddLinkTdDialogRef, AddLinkTdDialogProps>(
             className="w-full rounded-md border-2 border-gray-600 bg-gray-600 p-2 text-white focus:border-blue-500 focus:outline-none sm:text-sm"
             placeholder="relation name"
             value={formData.rel}
-            onChange={(e)=> setFormData({
-              ...formData,
-              rel:e.target.value
-            })}
+            onChange={(e) =>
+              setFormData({
+                ...formData,
+                rel: e.target.value,
+              })
+            }
           />
           <datalist id="relationType">
             <RelationType></RelationType>
@@ -192,7 +193,7 @@ const AddLinkTdDialog = forwardRef<AddLinkTdDialogRef, AddLinkTdDialogProps>(
             disabled={linkingMethod === "upload"}
             onClick={() => linkingMethodChange("upload")}
             className="h-9"
-             variant={`${linkingMethod === "upload" ? `primary`:`secondary`}`}
+            variant={`${linkingMethod === "upload" ? `primary` : `secondary`}`}
           >
             From local machine
           </BaseButton>
@@ -202,7 +203,7 @@ const AddLinkTdDialog = forwardRef<AddLinkTdDialogRef, AddLinkTdDialogProps>(
             disabled={linkingMethod === "url"}
             onClick={() => linkingMethodChange("url")}
             className="ml-2 h-9"
-            variant={`${linkingMethod === "url" ? `primary`:`secondary`}`}
+            variant={`${linkingMethod === "url" ? `primary` : `secondary`}`}
           >
             Resource url
           </BaseButton>
@@ -212,7 +213,7 @@ const AddLinkTdDialog = forwardRef<AddLinkTdDialogRef, AddLinkTdDialogProps>(
               name="link-href"
               id="link-href"
               className={`rounded-md border-2 bg-gray-600 p-2 text-white focus:outline-none sm:text-sm ${
-                 errorMessage
+                errorMessage
                   ? "border-red-400"
                   : "border-gray-600 focus:border-blue-500"
               }`}
@@ -224,7 +225,7 @@ const AddLinkTdDialog = forwardRef<AddLinkTdDialogRef, AddLinkTdDialogProps>(
                 });
                 setErrorMessage("");
               }}
-               readOnly={linkingMethod !== "url"}
+              readOnly={linkingMethod !== "url"}
               value={formData.href}
             />
             {linkingMethod === "upload" && (
@@ -239,7 +240,7 @@ const AddLinkTdDialog = forwardRef<AddLinkTdDialogRef, AddLinkTdDialogProps>(
               </BaseButton>
             )}
           </div>
-            {errorMessage && (
+          {errorMessage && (
             <span id="link-href-info" className="pl-2 text-xs text-red-400">
               {errorMessage}
             </span>
@@ -259,10 +260,12 @@ const AddLinkTdDialog = forwardRef<AddLinkTdDialogRef, AddLinkTdDialogProps>(
               className="w-full rounded-md border-2 border-gray-600 bg-gray-600 p-2 text-white focus:border-blue-500 focus:outline-none sm:text-sm"
               placeholder="media type"
               value={formData.type}
-              onChange={(e)=> setFormData({
-                ...formData,
-                type: e.target.value,
-              })}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  type: e.target.value,
+                })
+              }
             />
             <datalist id="mediaType">
               <option value="application/td+json" />
@@ -270,7 +273,6 @@ const AddLinkTdDialog = forwardRef<AddLinkTdDialogRef, AddLinkTdDialogProps>(
               <option value="text/csv" />
               <option value="video/mp4" />
             </datalist>
-
           </div>
         </div>
       </>
@@ -285,7 +287,7 @@ const AddLinkTdDialog = forwardRef<AddLinkTdDialogRef, AddLinkTdDialogProps>(
       const linkedTd: Record<string, any> = {};
 
       const link: Link = {
-         href: formData.href.trim(),
+        href: formData.href.trim(),
       };
       if (formData.rel) link.rel = formData.rel.trim();
       if (formData.type) link.type = formData.type.trim();
@@ -299,7 +301,8 @@ const AddLinkTdDialog = forwardRef<AddLinkTdDialogRef, AddLinkTdDialogProps>(
       }
       if (
         linkingMethod === "url" &&
-        isValidUrl && url &&
+        isValidUrl &&
+        url &&
         (url.protocol === "http:" || url.protocol === "https:")
       ) {
         try {
@@ -325,7 +328,7 @@ const AddLinkTdDialog = forwardRef<AddLinkTdDialogRef, AddLinkTdDialogProps>(
       }
 
       if (link.href === "") {
-         setErrorMessage("The href field is mandatory ...");
+        setErrorMessage("The href field is mandatory ...");
       } else if (checkIfLinkExists(link)) {
         setErrorMessage(
           "A Link with the target Thing Description already exists ..."
