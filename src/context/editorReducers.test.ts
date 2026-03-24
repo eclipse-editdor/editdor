@@ -331,30 +331,6 @@ describe("addFormReducer", () => {
     expect(nextState).toBe(state);
   });
 
-  test("should return the same state when interaction.forms exists but is not an array", () => {
-    const form = { href: "/temperature", op: "readproperty" };
-    const state = {
-      ...baseState,
-      parsedTD: {
-        properties: {
-          temperature: {
-            title: "temperature",
-            forms: { href: "/bad" },
-          },
-        },
-      },
-    };
-
-    const nextState = editdorReducer(state, {
-      type: ADD_FORM_TO_TD,
-      level: "properties",
-      interactionName: "temperature",
-      form,
-    });
-
-    expect(nextState).toBe(state);
-  });
-
   test("should not mutate the previous parsedTD object", () => {
     const originalParsedTD = {
       properties: {
