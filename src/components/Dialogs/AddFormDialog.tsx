@@ -10,20 +10,12 @@
  *
  * SPDX-License-Identifier: EPL-2.0 OR W3C-20150513
  ********************************************************************************/
-import React, {
-  forwardRef,
-  useContext,
-  useState,
-  useImperativeHandle,
-} from "react";
+import { forwardRef, useContext, useState, useImperativeHandle } from "react";
 import ReactDOM from "react-dom";
 import ediTDorContext from "../../context/ediTDorContext";
 import { checkIfFormIsInItem } from "../../utils/tdOperations";
 import DialogTemplate from "./DialogTemplate";
 import AddForm from "../App/AddForm";
-import FormCheckbox from "../base/FormCheckbox";
-import { HardDrive } from "react-feather";
-import { set } from "lodash";
 
 export type OperationsType = "property" | "action" | "event" | "thing" | "";
 export type OperationsMap = PropertyMap | ActionMap | EventMap | ThingMap;
@@ -122,7 +114,7 @@ const AddFormDialog = forwardRef<AddFormDialogRef, AddFormDialogProps>(
     const checkDuplicates = (form: ExplicitForm): boolean => {
       const isDuplicate: boolean =
         interaction.forms !== undefined
-          ? checkIfFormIsInItem(form, interaction)
+          ? checkIfFormIsInItem(form, interaction as { forms: ExplicitForm[] })
           : false;
       return isDuplicate;
     };
