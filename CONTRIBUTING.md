@@ -9,6 +9,7 @@ The follow extended contribution guidelines also applies:
 
 - Maximum of one pull request per contributer
 - Maximum of one issue assign per contributer
+- If an exception is necessary regarding the previous statements, contact the maintainer.
 - The use of AI and related toos is permitted. To increase the accuracy of these tools use the files provided in `.github/instructions` folder and `copilot-instructions.md` file. However, the following policy is mandatory:
 
       1. As a contributor, you are responsible for the code you submit, whether you use AI tools or write it yourself. Some AI tools offer settings, features, or modes that can help, but these are no substitute for your own review of code quality, correctness, style, security, and licensing.
