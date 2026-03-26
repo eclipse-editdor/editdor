@@ -168,7 +168,10 @@ const App: React.FC = () => {
       <AppHeader onToggleJSON={handleToggleJSON} isJSONVisible={doShowJSON} />
 
       <div className="">
-        <Container key={containerKey} className="height-adjust flex flex-col md:flex-row">
+        <Container
+          key={containerKey}
+          className="height-adjust flex flex-col md:flex-row"
+        >
           <Section
             minSize={550}
             className={`w-full min-w-16 ${
