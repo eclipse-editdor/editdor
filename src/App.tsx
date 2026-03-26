@@ -45,6 +45,7 @@ const App: React.FC = () => {
 
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
   const [doShowJSON, setDoShowJSON] = useState(true);
+  const [containerKey, setContainerKey] = useState(0);
   const [customBreakpointsState, setCustomBreakpointsState] = useState(0);
   const tdViewerRef = useRef<HTMLDivElement>(null);
 
@@ -74,6 +75,7 @@ const App: React.FC = () => {
 
   const handleToggleJSON = () => {
     setDoShowJSON((prev) => !prev);
+    setContainerKey((prev) => prev + 1);
   };
 
   useEffect(() => {
@@ -166,7 +168,7 @@ const App: React.FC = () => {
       <AppHeader onToggleJSON={handleToggleJSON} isJSONVisible={doShowJSON} />
 
       <div className="">
-        <Container className="height-adjust flex flex-col md:flex-row">
+        <Container key={containerKey} className="height-adjust flex flex-col md:flex-row">
           <Section
             minSize={550}
             className={`w-full min-w-16 ${
