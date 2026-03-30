@@ -24,6 +24,16 @@ import { decompressSharedTd } from "./share";
 import { editor } from "monaco-editor";
 import BaseButton from "./components/TDViewer/base/BaseButton";
 import ErrorDialog from "./components/Dialogs/ErrorDialog";
+import DialogTemplate from "./components/Dialogs/DialogTemplate";
+
+type ReadyMessage = {
+  type: "EDITDOR_READY";
+};
+
+type LoadTdMessage = {
+  type: "LOAD_TD";
+  payload: string;
+};
 
 const GlobalStateWrapper = () => {
   return (
@@ -42,6 +52,8 @@ const BREAKPOINTS = {
 // This variable prevents the callback from being executed twice.
 let checkedUrl = false;
 
+const APP_A_ORIGIN = "http://localhost:5173";
+
 const App: React.FC = () => {
   const context = useContext(ediTDorContext);
 
@@ -49,6 +61,8 @@ const App: React.FC = () => {
   const [doShowJSON, setDoShowJSON] = useState(false);
   const [customBreakpointsState, setCustomBreakpointsState] = useState(0);
   const tdViewerRef = useRef<HTMLDivElement>(null);
+  const [pendingTd, setPendingTd] = useState("");
+  const [isOpen, setIsOpen] = useState(false);
 
   const [errorDisplay, setErrorDisplay] = useState<{
     state: boolean;
@@ -135,7 +149,7 @@ const App: React.FC = () => {
         td = JSON.parse(td);
         context.updateOfflineTD(JSON.stringify(td, null, 2));
       } catch (e) {
-        context.updateOfflineTD(td);
+        context.updateOfflineTD(td ?? "");
         showError(
           `Tried to JSON parse the TD from local storage, but failed: ${e}`
         );
@@ -162,6 +176,56 @@ const App: React.FC = () => {
     resizeObserver.observe(tdViewerRef.current);
     return () => resizeObserver.disconnect();
   }, []);
+
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.origin !== APP_A_ORIGIN) {
+        return;
+      }
+
+      if (event.data?.type !== "LOAD_TD") {
+        return;
+      }
+
+      if (typeof event.data.payload !== "string") {
+        return;
+      }
+
+      try {
+        JSON.parse(event.data.payload);
+        setPendingTd(event.data.payload);
+        setIsOpen(true);
+      } catch {
+        showError("Received invalid JSON from the other application.");
+      }
+    };
+
+    window.addEventListener("message", handleMessage);
+
+    if (window.opener) {
+      window.opener.postMessage(
+        {
+          type: "EDITDOR_READY",
+        },
+        APP_A_ORIGIN
+      );
+    }
+
+    return () => {
+      window.removeEventListener("message", handleMessage);
+    };
+  }, []);
+
+  const onHandleEventRightButton = () => {
+    context.updateOfflineTD(pendingTd);
+    setPendingTd("");
+    setIsOpen(false);
+  };
+
+  const onHandleEventLeftButton = () => {
+    setPendingTd("");
+    setIsOpen(false);
+  };
 
   return (
     <main className="flex max-h-screen w-screen flex-col">
@@ -207,6 +271,12 @@ const App: React.FC = () => {
         onClose={() => setErrorDisplay({ state: false, message: "" })}
         errorMessage={errorDisplay.message}
       />
+      {isOpen && (
+        <DialogTemplate
+          onHandleEventRightButton={onHandleEventRightButton}
+          onHandleEventLeftButton={onHandleEventLeftButton}
+        ></DialogTemplate>
+      )}
     </main>
   );
 };
