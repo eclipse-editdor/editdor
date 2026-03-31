@@ -32,6 +32,7 @@ type ReadyMessage = {
 
 type LoadTdMessage = {
   type: "LOAD_TD";
+  description: string;
   payload: string;
 };
 
@@ -52,7 +53,7 @@ const BREAKPOINTS = {
 // This variable prevents the callback from being executed twice.
 let checkedUrl = false;
 
-const APP_A_ORIGIN = "http://localhost:5173";
+const APP_TMC_UI_ORIGIN = "http://localhost:5174";
 
 const App: React.FC = () => {
   const context = useContext(ediTDorContext);
@@ -61,7 +62,8 @@ const App: React.FC = () => {
   const [doShowJSON, setDoShowJSON] = useState(false);
   const [customBreakpointsState, setCustomBreakpointsState] = useState(0);
   const tdViewerRef = useRef<HTMLDivElement>(null);
-  const [pendingTd, setPendingTd] = useState("");
+  const [pendingTd, setPendingTd] = useState<string>("");
+  const [pendingTitle, setPendingTitle] = useState<string>("");
   const [isOpen, setIsOpen] = useState(false);
 
   const [errorDisplay, setErrorDisplay] = useState<{
@@ -178,22 +180,27 @@ const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    const readyMessage: ReadyMessage = {
+      type: "EDITDOR_READY",
+    };
+
     const handleMessage = (event: MessageEvent) => {
-      if (event.origin !== APP_A_ORIGIN) {
+      if (event.origin !== APP_TMC_UI_ORIGIN) {
         return;
       }
 
-      if (event.data?.type !== "LOAD_TD") {
+      if ((event.data as LoadTdMessage).type !== "LOAD_TD") {
         return;
       }
 
-      if (typeof event.data.payload !== "string") {
+      if (typeof (event.data as LoadTdMessage).payload !== "string") {
         return;
       }
 
       try {
-        JSON.parse(event.data.payload);
-        setPendingTd(event.data.payload);
+        JSON.parse((event.data as LoadTdMessage).payload);
+        setPendingTitle((event.data as LoadTdMessage).description);
+        setPendingTd((event.data as LoadTdMessage).payload);
         setIsOpen(true);
       } catch {
         showError("Received invalid JSON from the other application.");
@@ -203,12 +210,7 @@ const App: React.FC = () => {
     window.addEventListener("message", handleMessage);
 
     if (window.opener) {
-      window.opener.postMessage(
-        {
-          type: "EDITDOR_READY",
-        },
-        APP_A_ORIGIN
-      );
+      window.opener.postMessage(readyMessage, APP_TMC_UI_ORIGIN);
     }
 
     return () => {
@@ -273,7 +275,10 @@ const App: React.FC = () => {
       />
       {isOpen && (
         <DialogTemplate
+          title={`The Thing Description "${pendingTitle}" was received from the other application.`}
+          description={`Do you wish to open the following TD  in the editdor?`}
           onHandleEventRightButton={onHandleEventRightButton}
+          rightButton="Confirm"
           onHandleEventLeftButton={onHandleEventLeftButton}
         ></DialogTemplate>
       )}
