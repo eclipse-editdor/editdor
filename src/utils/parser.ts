@@ -12,6 +12,27 @@
  ********************************************************************************/
 import Papa from "papaparse";
 
+/** ================= CSV WARNING SUPPORT ================= */
+
+export type CsvWarning = {
+  row: number;
+  column: string;
+  message: string;
+};
+
+const VALID_TYPES = ["number", "string", "boolean"];
+const VALID_MODBUS_ENTITIES = [
+  "HoldingRegister",
+  "InputRegister",
+  "Coil",
+  "DiscreteInput",
+];
+
+const VALID_MODBUS_ENTITIES_LOWER = VALID_MODBUS_ENTITIES.map((e) =>
+  e.toLowerCase()
+);
+/** ====================================================== */
+
 export type CsvData = {
   name: string;
   title?: string;
@@ -34,6 +55,9 @@ export type CsvData = {
   "modbus:timeout"?: string;
 };
 
+/**
+ * Parse CSV and collect warnings
+ */
 type PropertyForm = {
   op: string | string[];
   href: string;
@@ -66,47 +90,74 @@ type Properties = {
 };
 
 /**
- * Parses a CSV string into an array of objects of type CsvData.
- * @param csvContent - The CSV content as a string.
- * @param hasHeaders - Whether the CSV has headers (default: true).
- * @param character - The character used to separate values (default: ",").
- * @returns An array of objects (if headers are present) or arrays (if no headers).
+ * Parse CSV and collect warnings
  */
 export const parseCsv = (
   csvContent: string,
   hasHeaders: boolean = true
-): CsvData[] => {
-  if (csvContent === "") throw new Error("CSV content is empty");
+): { data: CsvData[]; warnings: CsvWarning[] } => {
+  if (!csvContent) throw new Error("CSV content is empty");
+
+  const warnings: CsvWarning[] = [];
 
   const res = Papa.parse<CsvData>(csvContent, {
-    header: true,
+    header: hasHeaders,
     quoteChar: '"',
     skipEmptyLines: true,
     dynamicTyping: false,
     transformHeader: (h) => h.trim(),
     transform: (value) => (typeof value === "string" ? value.trim() : value),
-    complete: (results) => {
-      console.log(results.data, results.errors, results.meta);
-    },
   });
 
   if (res.errors.length) {
-    // Gather first few errors for context
-    const msg = res.errors
-      .slice(0, 3)
-      .map(
-        (e) =>
-          `Row ${e.row ?? "?"}: ${e.message}${
-            e.code ? ` (code=${e.code})` : ""
-          }`
-      )
-      .join("; ");
-    throw new Error(`CSV parse failed: ${msg}`);
+    throw new Error(
+      res.errors.map((e) => `Row ${e.row}: ${e.message}`).join("; ")
+    );
   }
 
-  return res.data.filter((row) =>
-    Object.values(row).some((v) => v !== "" && v != null)
-  );
+  res.data.forEach((row, index) => {
+    const rowNum = index + 2;
+
+    if (row.type && !VALID_TYPES.includes(row.type)) {
+      warnings.push({
+        row: rowNum,
+        column: "type",
+        message: `Invalid type "${row.type}"`,
+      });
+    }
+
+    if (row["modbus:entity"]) {
+      const entityValue = row["modbus:entity"];
+      const entityLower = entityValue.toLowerCase();
+
+      const matchedIndex = VALID_MODBUS_ENTITIES_LOWER.indexOf(entityLower);
+
+      if (matchedIndex === -1) {
+        warnings.push({
+          row: rowNum,
+          column: "modbus:entity",
+          message: `Invalid modbus entity "${entityValue}"`,
+        });
+      } else {
+        const canonical = VALID_MODBUS_ENTITIES[matchedIndex];
+
+        if (entityValue !== canonical) {
+          warnings.push({
+            row: rowNum,
+            column: "modbus:entity",
+            message: `Modbus entity "${entityValue}" has incorrect casing; expected "${canonical}"`,
+          });
+        }
+      }
+    }
+  });
+
+  return {
+    data: res.data.filter((row) =>
+      Object.values(row).some((v) => v !== "" && v != null)
+    ),
+    warnings,
+  };
 };
 
 /**
