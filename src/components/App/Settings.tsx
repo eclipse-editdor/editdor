@@ -21,7 +21,6 @@ export interface SettingsData {
   northboundUrl: string;
   southboundUrl: string;
   pathToValue: string;
-  jsonIndentation: 2 | 4;
 }
 
 export interface SettingsErrors {
@@ -42,7 +41,6 @@ const Settings: React.FC<SettingsProps> = ({
     northboundUrl: "",
     southboundUrl: "",
     pathToValue: "/",
-    jsonIndentation: 2,
   },
   onChange,
   hideTitle = false,
@@ -56,12 +54,6 @@ const Settings: React.FC<SettingsProps> = ({
     pathToValue: "",
   });
 
-  useEffect(() => {
-    setData((prev) => ({
-      ...prev,
-      jsonIndentation: context.jsonIndentation,
-    }));
-  }, [context.jsonIndentation]);
 
   useEffect(() => {
     if (onChange) {
@@ -139,7 +131,6 @@ const Settings: React.FC<SettingsProps> = ({
     (e: React.ChangeEvent<HTMLSelectElement>) => {
       const parsed = Number(e.target.value);
       const value: 2 | 4 = parsed === 4 ? 4 : 2;
-      setData((prev) => ({ ...prev, jsonIndentation: value }));
       context.updateJsonIndentation(value);
     },
     [context]
@@ -153,7 +144,7 @@ const Settings: React.FC<SettingsProps> = ({
           <Dropdown
             id="json-indentation-select"
             label="Space indentation"
-            value={String(data.jsonIndentation)}
+            value={String(context.jsonIndentation)}
             onChange={handleJsonIndentationChange}
             options={["2", "4"]}
             className="w-full"

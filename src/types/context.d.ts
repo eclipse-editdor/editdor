@@ -108,6 +108,7 @@ declare global {
     | "updateValidationMessage"
     | "updateNorthboundConnection"
     | "updateContributeCatalog"
+    | "updateJsonIndentation"
   >;
 
   type Action =
@@ -160,7 +161,6 @@ declare global {
     northboundUrl: string;
     southboundUrl: string;
     pathToValue: string;
-    jsonIndentation: 2 | 4;
   }
 
   // Define the shape of the state
