@@ -200,7 +200,6 @@ const GlobalState: React.FC<IGlobalStateProps> = ({ children }) => {
         northboundConnection: editdorState.northboundConnection,
         contributeCatalog: editdorState.contributeCatalog,
         jsonIndentation: editdorState.jsonIndentation,
-        updateJsonIndentation,
         updateOfflineTD,
         updateIsModified,
         setFileHandle,
@@ -213,6 +212,7 @@ const GlobalState: React.FC<IGlobalStateProps> = ({ children }) => {
         updateValidationMessage,
         updateNorthboundConnection,
         updateContributeCatalog,
+        updateJsonIndentation,
       }}
     >
       {children}
