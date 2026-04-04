@@ -54,7 +54,6 @@ const Settings: React.FC<SettingsProps> = ({
     pathToValue: "",
   });
 
-
   useEffect(() => {
     if (onChange) {
       const isValid =
