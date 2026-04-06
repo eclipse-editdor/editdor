@@ -19,15 +19,29 @@ import {
 } from "@testing-library/react";
 import { useContext } from "react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import App from "../../App";
-import ediTDorContext from "../../context/ediTDorContext";
-import { decompressSharedTd } from "../../share";
+import App from "../App";
+import ediTDorContext from "../context/ediTDorContext";
+import { decompressSharedTd } from "../share";
 import {
   THING_DESCRIPTION_LAMP_V_STRING,
   THING_DESCRIPTION_LAMP_JSON,
 } from "./constants";
 
-vi.mock("../../components/Editor/JsonEditor", () => ({
+vi.mock("@node-wot/browser-bundle", () => ({
+  Core: {
+    Servient: vi.fn().mockImplementation(() => ({
+      addClientFactory: vi.fn(),
+      start: vi.fn().mockResolvedValue({
+        consume: vi.fn(),
+      }),
+    })),
+  },
+  Http: {
+    HttpClientFactory: vi.fn(),
+  },
+}));
+
+vi.mock("../components/Editor/JsonEditor", () => ({
   default: () => {
     const { offlineTD } = useContext(ediTDorContext);
 
@@ -35,11 +49,11 @@ vi.mock("../../components/Editor/JsonEditor", () => ({
   },
 }));
 
-vi.mock("../../components/TDViewer/TDViewer", () => ({
+vi.mock("../components/TDViewer/TDViewer", () => ({
   default: () => <div>TDViewer</div>,
 }));
 
-vi.mock("../../share", () => ({
+vi.mock("../share", () => ({
   decompressSharedTd: vi.fn(),
 }));
 
@@ -53,25 +67,78 @@ vi.mock("@column-resizer/react", () => ({
   Bar: () => <div data-testid="resize-bar" />,
 }));
 
-vi.mock("../../components/Dialogs/ConvertTmDialog", () => ({
-  default: () => null,
-}));
+vi.mock("../components/Dialogs/ConvertTmDialog", async () => {
+  const React = await import("react");
 
-vi.mock("../../components/Dialogs/CreateTdDialog", () => ({
-  default: () => null,
-}));
+  const MockConvertTmDialog = React.forwardRef((_props, ref) => {
+    React.useImperativeHandle(ref, () => ({
+      openModal: () => undefined,
+      close: () => undefined,
+    }));
 
-vi.mock("../../components/Dialogs/ShareDialog", () => ({
-  default: () => null,
-}));
+    return null;
+  });
 
-vi.mock("../../components/Dialogs/ContributeToCatalogDialog", () => ({
-  default: () => null,
-}));
+  return { default: MockConvertTmDialog };
+});
 
-vi.mock("../../components/Dialogs/SendTDDialog", () => ({
-  default: () => null,
-}));
+vi.mock("../components/Dialogs/CreateTdDialog", async () => {
+  const React = await import("react");
+
+  const MockCreateTdDialog = React.forwardRef((_props, ref) => {
+    React.useImperativeHandle(ref, () => ({
+      openModal: () => undefined,
+    }));
+
+    return null;
+  });
+
+  return { default: MockCreateTdDialog };
+});
+
+vi.mock("../components/Dialogs/ShareDialog", async () => {
+  const React = await import("react");
+
+  const MockShareDialog = React.forwardRef((_props, ref) => {
+    React.useImperativeHandle(ref, () => ({
+      openModal: () => undefined,
+    }));
+
+    return null;
+  });
+
+  return { default: MockShareDialog };
+});
+
+vi.mock("../components/Dialogs/ContributeToCatalogDialog", async () => {
+  const React = await import("react");
+
+  const MockContributeToCatalogDialog = React.forwardRef((_props, ref) => {
+    React.useImperativeHandle(ref, () => ({
+      openModal: () => undefined,
+      close: () => undefined,
+    }));
+
+    return null;
+  });
+
+  return { default: MockContributeToCatalogDialog };
+});
+
+vi.mock("../components/Dialogs/SendTDDialog", async () => {
+  const React = await import("react");
+
+  const MockSendTdDialog = React.forwardRef((_props, ref) => {
+    React.useImperativeHandle(ref, () => ({
+      openModal: () => undefined,
+      close: () => undefined,
+    }));
+
+    return null;
+  });
+
+  return { default: MockSendTdDialog };
+});
 
 const mockedDecompressSharedTd = vi.mocked(decompressSharedTd);
 
