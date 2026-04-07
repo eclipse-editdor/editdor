@@ -142,7 +142,7 @@ vi.mock("../components/Dialogs/SendTDDialog", async () => {
 
 const mockedDecompressSharedTd = vi.mocked(decompressSharedTd);
 
-describe("Integration test on params in the URI", () => {
+describe("App component URL bootstrapping logic", () => {
   beforeEach(() => {
     localStorage.clear();
     window.history.replaceState({}, "", "/");
@@ -250,13 +250,38 @@ describe("Integration test on params in the URI", () => {
       );
     });
   });
+  test("shows an error when localstorage query param exists but td is missing", async () => {
+    window.history.replaceState({}, "", "/?localstorage=1");
 
-  test("ignores proxyEndpoint and southboundTdId when no TD source is provided", async () => {
-    window.history.replaceState(
-      {},
-      "",
-      "/?proxyEndpoint=http://localhost:3000&southboundTdId=device-7"
-    );
+    render(<App />);
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(/request to read td from local storage failed/i)
+      ).toBeInTheDocument();
+    });
+
+    expect(screen.getByTestId("offline-td")).toHaveTextContent("");
+  });
+
+  test("loads invalid JSON from local storage as raw text and shows an error", async () => {
+    localStorage.setItem("td", "not-json");
+
+    window.history.replaceState({}, "", "/?localstorage=1");
+
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("offline-td")).toHaveTextContent("not-json");
+      expect(
+        screen.getByText(
+          /tried to json parse the td from local storage, but failed/i
+        )
+      ).toBeInTheDocument();
+    });
+  });
+  test("does nothing when no relevant URL params are present", async () => {
+    window.history.replaceState({}, "", "/");
 
     render(<App />);
 
@@ -272,41 +297,38 @@ describe("Integration test on params in the URI", () => {
       screen.queryByText(/request to read td from local storage failed/i)
     ).not.toBeInTheDocument();
   });
+  test("shows an error when the td query param cannot be decompressed", async () => {
+    mockedDecompressSharedTd.mockReturnValue(undefined);
 
-  test("still loads the td query param when proxyEndpoint and southboundTdId are also present", async () => {
-    mockedDecompressSharedTd.mockReturnValue(THING_DESCRIPTION_LAMP_JSON);
-
-    window.history.replaceState(
-      {},
-      "",
-      "/?td=combined&proxyEndpoint=http://localhost:3000&southboundTdId=device-7"
-    );
+    window.history.replaceState({}, "", "/?td=broken-value");
 
     render(<App />);
 
     await waitFor(() => {
-      expect(mockedDecompressSharedTd).toHaveBeenCalledWith("combined");
-      expect(screen.getByTestId("offline-td")).toHaveTextContent(
-        '"title": "MyLampThing"'
-      );
-      expect(screen.getByTestId("offline-td")).toHaveTextContent(
-        '"id": "urn:uuid:0804d572-cce8-422a-bb7c-4412fcd56f06"'
-      );
+      expect(mockedDecompressSharedTd).toHaveBeenCalledWith("broken-value");
+      expect(
+        screen.getByText(
+          /the lz compressed td found in the url couldn't be reconstructed/i
+        )
+      ).toBeInTheDocument();
     });
-  });
 
-  test("still loads the local storage TD when southboundTdId is also present", async () => {
+    expect(screen.getByTestId("offline-td")).toHaveTextContent("");
+  });
+  test("loads local storage after td when both query params are present", async () => {
+    mockedDecompressSharedTd.mockReturnValue({
+      title: "FromCompressedTd",
+      id: "urn:compressed",
+    });
+
     localStorage.setItem("td", THING_DESCRIPTION_LAMP_V_STRING);
 
-    window.history.replaceState(
-      {},
-      "",
-      "/?localstorage=1&southboundTdId=device-7"
-    );
+    window.history.replaceState({}, "", "/?td=compressed-value&localstorage=1");
 
     render(<App />);
 
     await waitFor(() => {
+      expect(mockedDecompressSharedTd).toHaveBeenCalledWith("compressed-value");
       expect(screen.getByTestId("offline-td")).toHaveTextContent(
         '"title": "MyLampThing"'
       );
@@ -314,5 +336,27 @@ describe("Integration test on params in the URI", () => {
         '"id": "urn:uuid:0804d572-cce8-422a-bb7c-4412fcd56f06"'
       );
     });
+
+    expect(screen.getByTestId("offline-td")).not.toHaveTextContent(
+      '"title": "FromCompressedTd"'
+    );
+  });
+  test("does not read local storage when td decompression fails even if localstorage is present", async () => {
+    mockedDecompressSharedTd.mockReturnValue(undefined);
+    localStorage.setItem("td", THING_DESCRIPTION_LAMP_V_STRING);
+
+    window.history.replaceState({}, "", "/?td=broken-value&localstorage=1");
+
+    render(<App />);
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(
+          /the lz compressed td found in the url couldn't be reconstructed/i
+        )
+      ).toBeInTheDocument();
+    });
+
+    expect(screen.getByTestId("offline-td")).toHaveTextContent("");
   });
 });

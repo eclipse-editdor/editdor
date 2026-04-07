@@ -125,10 +125,7 @@ const App = () => {
     const url = new URL(window.location.href);
 
     const hasRelevantParam =
-      url.searchParams.has("td") ||
-      url.searchParams.has("proxyEndpoint") ||
-      url.searchParams.has("localstorage") ||
-      url.searchParams.has("southboundTdId");
+      url.searchParams.has("td") || url.searchParams.has("localstorage");
 
     if (!hasRelevantParam) {
       return;
