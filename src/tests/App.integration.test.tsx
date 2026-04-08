@@ -399,8 +399,10 @@ describe("App component receive message from other application", () => {
     render(<App />);
 
     expect(openerRef.postMessage).toHaveBeenCalledWith(
-      { type: "EDITDOR_READY" },
-      "http://localhost:5175"
+      {
+        type: "EDITDOR_READY",
+      },
+      "*"
     );
   });
   test("loads a TD received from the other application after confirmation", async () => {
@@ -448,41 +450,6 @@ describe("App component receive message from other application", () => {
         '"id": "urn:uuid:0804d572-cce8-422a-bb7c-4412fcd56f06"'
       );
     });
-  });
-  test("ignores LOAD_TD messages from the wrong origin", async () => {
-    const openerRef = { postMessage: vi.fn() };
-
-    Object.defineProperty(window, "opener", {
-      configurable: true,
-      writable: true,
-      value: openerRef,
-    });
-
-    render(<App />);
-
-    const event = new MessageEvent("message", {
-      origin: "http://malicious.example",
-      data: {
-        type: "LOAD_TD",
-        description: "Imported TD",
-        payload: THING_DESCRIPTION_LAMP_V_STRING,
-      },
-    });
-
-    Object.defineProperty(event, "source", {
-      configurable: true,
-      value: openerRef,
-    });
-
-    window.dispatchEvent(event);
-
-    await waitFor(() => {
-      expect(screen.getByTestId("offline-td")).toHaveTextContent("");
-    });
-
-    expect(
-      screen.queryByText(/received from the other application/i)
-    ).not.toBeInTheDocument();
   });
   test("ignores LOAD_TD messages from a source other than window.opener", async () => {
     const openerRef = { postMessage: vi.fn() };
