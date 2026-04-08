@@ -47,8 +47,6 @@ const BREAKPOINTS = {
   SMALL: 850,
 };
 
-const APP_TMC_UI_ORIGIN = "http://localhost:5175";
-
 const App = () => {
   const context = useContext(ediTDorContext);
 
@@ -189,10 +187,6 @@ const App = () => {
     };
 
     const handleMessage = (event: MessageEvent) => {
-      if (event.origin !== APP_TMC_UI_ORIGIN) {
-        return;
-      }
-
       if (event.source !== window.opener) {
         return;
       }
@@ -214,7 +208,7 @@ const App = () => {
     window.addEventListener("message", handleMessage);
 
     if (window.opener) {
-      window.opener.postMessage(readyMessage, APP_TMC_UI_ORIGIN);
+      window.opener.postMessage(readyMessage, "*");
     }
 
     return () => {

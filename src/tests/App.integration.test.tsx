@@ -142,41 +142,41 @@ vi.mock("../components/Dialogs/SendTDDialog", async () => {
 
 const mockedDecompressSharedTd = vi.mocked(decompressSharedTd);
 
+beforeEach(() => {
+  localStorage.clear();
+  window.history.replaceState({}, "", "/");
+
+  Object.defineProperty(window, "opener", {
+    configurable: true,
+    writable: true,
+    value: null,
+  });
+
+  Object.defineProperty(window, "confirm", {
+    configurable: true,
+    writable: true,
+    value: vi.fn(() => true),
+  });
+
+  class ResizeObserverMock {
+    observe() {}
+    disconnect() {}
+    unobserve() {}
+  }
+
+  vi.stubGlobal("ResizeObserver", ResizeObserverMock);
+  mockedDecompressSharedTd.mockReset();
+});
+
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+  vi.clearAllMocks();
+  localStorage.clear();
+  window.history.replaceState({}, "", "/");
+});
+
 describe("App component URL bootstrapping logic", () => {
-  beforeEach(() => {
-    localStorage.clear();
-    window.history.replaceState({}, "", "/");
-
-    Object.defineProperty(window, "opener", {
-      configurable: true,
-      writable: true,
-      value: null,
-    });
-
-    Object.defineProperty(window, "confirm", {
-      configurable: true,
-      writable: true,
-      value: vi.fn(() => true),
-    });
-
-    class ResizeObserverMock {
-      observe() {}
-      disconnect() {}
-      unobserve() {}
-    }
-
-    vi.stubGlobal("ResizeObserver", ResizeObserverMock);
-    mockedDecompressSharedTd.mockReset();
-  });
-
-  afterEach(() => {
-    cleanup();
-    vi.unstubAllGlobals();
-    vi.clearAllMocks();
-    localStorage.clear();
-    window.history.replaceState({}, "", "/");
-  });
-
   test("reads northbound, southbound and value path from url params and shows them in Settings", () => {
     window.history.replaceState(
       {},
@@ -358,5 +358,274 @@ describe("App component URL bootstrapping logic", () => {
     });
 
     expect(screen.getByTestId("offline-td")).toHaveTextContent("");
+  });
+  test("shows an error when persisting URL params to local storage fails", async () => {
+    const setItemSpy = vi
+      .spyOn(Storage.prototype, "setItem")
+      .mockImplementation(() => {
+        throw new Error("storage failed");
+      });
+
+    window.history.replaceState(
+      {},
+      "",
+      "/?northbound=http://localhost:8080&southbound=http://localhost:9090&valuePath=/foo/bar"
+    );
+
+    render(<App />);
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(/failed to persist url parameters to local storage/i)
+      ).toBeInTheDocument();
+    });
+
+    setItemSpy.mockRestore();
+  });
+});
+
+describe("App component receive message from other application", () => {
+  test("notifies the opener that editdor is ready on mount", () => {
+    const openerRef = {
+      postMessage: vi.fn(),
+    };
+
+    Object.defineProperty(window, "opener", {
+      configurable: true,
+      writable: true,
+      value: openerRef,
+    });
+
+    render(<App />);
+
+    expect(openerRef.postMessage).toHaveBeenCalledWith(
+      { type: "EDITDOR_READY" },
+      "http://localhost:5175"
+    );
+  });
+  test("loads a TD received from the other application after confirmation", async () => {
+    const openerRef = {
+      postMessage: vi.fn(),
+    };
+
+    Object.defineProperty(window, "opener", {
+      configurable: true,
+      writable: true,
+      value: openerRef,
+    });
+
+    render(<App />);
+
+    const event = new MessageEvent("message", {
+      origin: "http://localhost:5175",
+      data: {
+        type: "LOAD_TD",
+        description: "Imported TD",
+        payload: THING_DESCRIPTION_LAMP_V_STRING,
+      },
+    });
+
+    Object.defineProperty(event, "source", {
+      configurable: true,
+      value: openerRef,
+    });
+
+    window.dispatchEvent(event);
+
+    expect(
+      await screen.findByText(
+        'The Thing Description "Imported TD" was received from the other application.'
+      )
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /confirm/i }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("offline-td")).toHaveTextContent(
+        '"title": "MyLampThing"'
+      );
+      expect(screen.getByTestId("offline-td")).toHaveTextContent(
+        '"id": "urn:uuid:0804d572-cce8-422a-bb7c-4412fcd56f06"'
+      );
+    });
+  });
+  test("ignores LOAD_TD messages from the wrong origin", async () => {
+    const openerRef = { postMessage: vi.fn() };
+
+    Object.defineProperty(window, "opener", {
+      configurable: true,
+      writable: true,
+      value: openerRef,
+    });
+
+    render(<App />);
+
+    const event = new MessageEvent("message", {
+      origin: "http://malicious.example",
+      data: {
+        type: "LOAD_TD",
+        description: "Imported TD",
+        payload: THING_DESCRIPTION_LAMP_V_STRING,
+      },
+    });
+
+    Object.defineProperty(event, "source", {
+      configurable: true,
+      value: openerRef,
+    });
+
+    window.dispatchEvent(event);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("offline-td")).toHaveTextContent("");
+    });
+
+    expect(
+      screen.queryByText(/received from the other application/i)
+    ).not.toBeInTheDocument();
+  });
+  test("ignores LOAD_TD messages from a source other than window.opener", async () => {
+    const openerRef = { postMessage: vi.fn() };
+
+    Object.defineProperty(window, "opener", {
+      configurable: true,
+      writable: true,
+      value: openerRef,
+    });
+
+    render(<App />);
+
+    const event = new MessageEvent("message", {
+      origin: "http://localhost:5175",
+      data: {
+        type: "LOAD_TD",
+        description: "Imported TD",
+        payload: THING_DESCRIPTION_LAMP_V_STRING,
+      },
+    });
+
+    Object.defineProperty(event, "source", {
+      configurable: true,
+      value: {},
+    });
+
+    window.dispatchEvent(event);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("offline-td")).toHaveTextContent("");
+    });
+
+    expect(
+      screen.queryByText(/received from the other application/i)
+    ).not.toBeInTheDocument();
+  });
+  test("shows an error when the other application sends invalid JSON", async () => {
+    const openerRef = { postMessage: vi.fn() };
+
+    Object.defineProperty(window, "opener", {
+      configurable: true,
+      writable: true,
+      value: openerRef,
+    });
+
+    render(<App />);
+
+    const event = new MessageEvent("message", {
+      origin: "http://localhost:5175",
+      data: {
+        type: "LOAD_TD",
+        description: "Broken TD",
+        payload: "not-json",
+      },
+    });
+
+    Object.defineProperty(event, "source", {
+      configurable: true,
+      value: openerRef,
+    });
+
+    window.dispatchEvent(event);
+
+    expect(
+      await screen.findByText(
+        /received invalid json from the other application/i
+      )
+    ).toBeInTheDocument();
+
+    expect(screen.getByTestId("offline-td")).toHaveTextContent("");
+  });
+  test("does not load the received TD when the user cancels", async () => {
+    const openerRef = { postMessage: vi.fn() };
+
+    Object.defineProperty(window, "opener", {
+      configurable: true,
+      writable: true,
+      value: openerRef,
+    });
+
+    render(<App />);
+
+    const event = new MessageEvent("message", {
+      origin: "http://localhost:5175",
+      data: {
+        type: "LOAD_TD",
+        description: "Imported TD",
+        payload: THING_DESCRIPTION_LAMP_V_STRING,
+      },
+    });
+
+    Object.defineProperty(event, "source", {
+      configurable: true,
+      value: openerRef,
+    });
+
+    window.dispatchEvent(event);
+
+    expect(
+      await screen.findByText(
+        'The Thing Description "Imported TD" was received from the other application.'
+      )
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /cancel/i }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("offline-td")).toHaveTextContent("");
+    });
+
+    expect(
+      screen.queryByText(/received from the other application/i)
+    ).not.toBeInTheDocument();
+  });
+  test("ignores messages that are not valid LOAD_TD payloads", async () => {
+    const openerRef = { postMessage: vi.fn() };
+
+    Object.defineProperty(window, "opener", {
+      configurable: true,
+      writable: true,
+      value: openerRef,
+    });
+
+    render(<App />);
+
+    const event = new MessageEvent("message", {
+      origin: "http://localhost:5175",
+      data: { type: "LOAD_TD", payload: THING_DESCRIPTION_LAMP_V_STRING },
+    });
+
+    Object.defineProperty(event, "source", {
+      configurable: true,
+      value: openerRef,
+    });
+
+    window.dispatchEvent(event);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("offline-td")).toHaveTextContent("");
+    });
+
+    expect(
+      screen.queryByText(/received from the other application/i)
+    ).not.toBeInTheDocument();
   });
 });
