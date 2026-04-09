@@ -97,7 +97,7 @@ const updateOfflineTDReducer = (
   try {
     parsedTD = JSON.parse(offlineTD);
   } catch (e) {
-    console.error((e as Error).message);
+    // console.error((e as Error).message);
     return {
       ...state,
       offlineTD: offlineTD,
