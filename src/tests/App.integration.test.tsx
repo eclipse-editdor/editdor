@@ -11,6 +11,7 @@
  * SPDX-License-Identifier: EPL-2.0 OR W3C-20150513
  ********************************************************************************/
 import {
+  act,
   render,
   screen,
   cleanup,
@@ -432,7 +433,9 @@ describe("App component receive message from other application", () => {
       value: openerRef,
     });
 
-    window.dispatchEvent(event);
+    await act(async () => {
+      window.dispatchEvent(event);
+    });
 
     expect(
       await screen.findByText(
@@ -476,7 +479,9 @@ describe("App component receive message from other application", () => {
       value: {},
     });
 
-    window.dispatchEvent(event);
+    await act(async () => {
+      window.dispatchEvent(event);
+    });
 
     await waitFor(() => {
       expect(screen.getByTestId("offline-td")).toHaveTextContent("");
@@ -511,7 +516,9 @@ describe("App component receive message from other application", () => {
       value: openerRef,
     });
 
-    window.dispatchEvent(event);
+    await act(async () => {
+      window.dispatchEvent(event);
+    });
 
     expect(
       await screen.findByText(
@@ -546,7 +553,9 @@ describe("App component receive message from other application", () => {
       value: openerRef,
     });
 
-    window.dispatchEvent(event);
+    await act(async () => {
+      window.dispatchEvent(event);
+    });
 
     expect(
       await screen.findByText(
@@ -585,7 +594,9 @@ describe("App component receive message from other application", () => {
       value: openerRef,
     });
 
-    window.dispatchEvent(event);
+    await act(async () => {
+      window.dispatchEvent(event);
+    });
 
     await waitFor(() => {
       expect(screen.getByTestId("offline-td")).toHaveTextContent("");
