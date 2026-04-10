@@ -85,9 +85,7 @@ export const parseCsv = (
     dynamicTyping: false,
     transformHeader: (h) => h.trim(),
     transform: (value) => (typeof value === "string" ? value.trim() : value),
-    complete: (results) => {
-      console.log(results.data, results.errors, results.meta);
-    },
+    complete: () => {},
   });
 
   if (res.errors.length) {

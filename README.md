@@ -60,6 +60,8 @@ Please follow our [contribution guide](./CONTRIBUTING.md).
 
 In the development environment it is possible to use [react scan](https://react-scan.com/) to detect performance issues by analyzing the pop-up on the bottom right corner. The complete documentation is available [here](https://github.com/aidenybai/react-scan#readme).
 
+## Features
+
 ### Using the Catalog Contribution Feature
 
 You will need a [Thing Model Catalog](https://github.com/wot-oss/tmc) running somewhere. If you want to host it yourself, use the command-line interface to run one in the terminal using the following instructions:
@@ -85,7 +87,7 @@ A local repository folder will be created inside the tm-catalog directory
     tmc repo remove <nameOfCatalog>
 ```
 
-### Send TD feature
+### Using Send TD feature
 
 #### Northbound and Southbound URLs
 
@@ -122,7 +124,7 @@ Afterwards, if the service proxies the TD, ediTDor can fetch the proxied TD cont
 
 The proxy uses the TD sent to its southbound API endpoint to communicate with a Thing. This way, you can interact with a non-HTTP Thing from your ediTDor.
 
-### Automatically reading URL parameters
+### Using URL query parameters feature
 
 The ediTDor has the functionality to automatically set the following list of variables from a URL with query parameters:
 
@@ -146,6 +148,30 @@ For example, in a JSON like `{"foo": {"bar":"somevalue"}}`, where `somevalue` is
 Example of use:
 
     http://localhost:5173/?northbound=http://localhost:8080&southbound=http://github.com&valuePath=/value
+
+### Using postMessage API communication feature
+
+The ediTDor can receive a Thing Description from another web application through the browser `postMessage` API (Documentation [here](https://developer.mozilla.org/en-US/docs/Web/API/Window/postMessage)). When ediTDor is opened by another application in a new window or tab, it sends a readiness message back to the opener:
+
+```json
+{ "type": "EDITDOR_READY" }
+```
+
+After that, the parent application can send a Thing Description to ediTDor with a message in the following format:
+
+```json
+{
+  "type": "LOAD_TD",
+  "description": "Imported TD",
+  "payload": "{ \"@context\": \"https://www.w3.org/ns/wot-next/td\", \"title\": \"MyThing\" }"
+}
+```
+
+- **type** must be LOAD_TD
+- **description** is a string to show in the confirmation dialog, e.g. title, id
+- **payload** must be a valid JSON string containing the Thing Description
+
+When a valid message is received, ediTDor shows a confirmation dialog before loading the TD into the editor. If the payload is not valid JSON, an error message is shown instead.
 
 ## Implemented Features:
 

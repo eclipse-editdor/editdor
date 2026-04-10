@@ -19,11 +19,20 @@ import "./App.css";
 import AppFooter from "./components/App/AppFooter";
 import AppHeader from "./components/App/AppHeader";
 import { Container, Section, Bar } from "@column-resizer/react";
-import { RefreshCw } from "react-feather";
 import { decompressSharedTd } from "./share";
 import { editor } from "monaco-editor";
-import BaseButton from "./components/TDViewer/base/BaseButton";
 import ErrorDialog from "./components/Dialogs/ErrorDialog";
+import DialogTemplate from "./components/Dialogs/DialogTemplate";
+
+type ReadyMessage = {
+  type: "EDITDOR_READY";
+};
+
+type LoadTdMessage = {
+  type: "LOAD_TD";
+  description: string;
+  payload: string;
+};
 
 const GlobalStateWrapper = () => {
   return (
@@ -38,17 +47,15 @@ const BREAKPOINTS = {
   SMALL: 850,
 };
 
-// The useEffect hook for checking the URI was called twice somehow.
-// This variable prevents the callback from being executed twice.
-let checkedUrl = false;
-
-const App: React.FC = () => {
+const App = () => {
   const context = useContext(ediTDorContext);
 
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
-  const [doShowJSON, setDoShowJSON] = useState(false);
   const [customBreakpointsState, setCustomBreakpointsState] = useState(0);
   const tdViewerRef = useRef<HTMLDivElement>(null);
+  const [pendingTd, setPendingTd] = useState<string>("");
+  const [pendingTitle, setPendingTitle] = useState<string>("");
+  const [isOpen, setIsOpen] = useState(false);
 
   const [errorDisplay, setErrorDisplay] = useState<{
     state: boolean;
@@ -74,8 +81,18 @@ const App: React.FC = () => {
     }
   };
 
-  const handleToggleJSON = () => {
-    setDoShowJSON((prev) => !prev);
+  const isLoadTdMessage = (value: unknown): value is LoadTdMessage => {
+    if (typeof value !== "object" || value === null) {
+      return false;
+    }
+
+    const message = value as Record<string, unknown>;
+
+    return (
+      message.type === "LOAD_TD" &&
+      typeof message.description === "string" &&
+      typeof message.payload === "string"
+    );
   };
 
   useEffect(() => {
@@ -93,24 +110,25 @@ const App: React.FC = () => {
           processedValue = value + "/";
         }
 
-        localStorage.setItem(param, processedValue);
+        try {
+          localStorage.setItem(param, processedValue);
+        } catch {
+          showError("Failed to persist URL parameters to local storage.");
+        }
       }
     });
-  }, [window.location.search]);
+  }, []);
 
   useEffect(() => {
-    if (
-      checkedUrl ||
-      (window.location.search.indexOf("td") <= -1 &&
-        window.location.search.indexOf("proxyEndpoint") <= -1 &&
-        window.location.search.indexOf("localstorage") <= -1 &&
-        window.location.search.indexOf("southboundTdId") <= -1)
-    ) {
+    const url = new URL(window.location.href);
+
+    const hasRelevantParam =
+      url.searchParams.has("td") || url.searchParams.has("localstorage");
+
+    if (!hasRelevantParam) {
       return;
     }
-    checkedUrl = true;
 
-    const url = new URL(window.location.href);
     const compressedTd = url.searchParams.get("td");
     if (compressedTd !== null) {
       const td = decompressSharedTd(compressedTd);
@@ -125,23 +143,23 @@ const App: React.FC = () => {
     }
 
     if (url.searchParams.has("localstorage")) {
-      let td = localStorage.getItem("td");
-      if (!td) {
+      const storedTd = localStorage.getItem("td");
+      if (!storedTd) {
         showError("Request to read TD from local storage failed.");
         return;
       }
 
       try {
-        td = JSON.parse(td);
-        context.updateOfflineTD(JSON.stringify(td, null, 2));
-      } catch (e) {
-        context.updateOfflineTD(td);
+        const parsedTd: ThingDescription = JSON.parse(storedTd);
+        context.updateOfflineTD(JSON.stringify(parsedTd, null, 2));
+      } catch (error) {
+        context.updateOfflineTD(storedTd);
         showError(
-          `Tried to JSON parse the TD from local storage, but failed: ${e}`
+          `Tried to JSON parse the TD from local storage, but failed: ${error}`
         );
       }
     }
-  }, [context]);
+  }, []);
 
   useEffect(() => {
     if (!tdViewerRef.current) return;
@@ -162,6 +180,52 @@ const App: React.FC = () => {
     resizeObserver.observe(tdViewerRef.current);
     return () => resizeObserver.disconnect();
   }, []);
+
+  useEffect(() => {
+    const readyMessage: ReadyMessage = {
+      type: "EDITDOR_READY",
+    };
+
+    const handleMessage = (event: MessageEvent) => {
+      if (event.source !== window.opener) {
+        return;
+      }
+
+      if (!isLoadTdMessage(event.data)) {
+        return;
+      }
+
+      try {
+        JSON.parse(event.data.payload);
+        setPendingTitle(event.data.description);
+        setPendingTd(event.data.payload);
+        setIsOpen(true);
+      } catch {
+        showError("Received invalid JSON from the other application.");
+      }
+    };
+
+    window.addEventListener("message", handleMessage);
+
+    if (window.opener) {
+      window.opener.postMessage(readyMessage, "*");
+    }
+
+    return () => {
+      window.removeEventListener("message", handleMessage);
+    };
+  }, []);
+
+  const onHandleEventRightButton = () => {
+    context.updateOfflineTD(pendingTd);
+    setPendingTd("");
+    setIsOpen(false);
+  };
+
+  const onHandleEventLeftButton = () => {
+    setPendingTd("");
+    setIsOpen(false);
+  };
 
   return (
     <main className="flex max-h-screen w-screen flex-col">
@@ -187,15 +251,6 @@ const App: React.FC = () => {
           <Section className="w-full md:w-5/12">
             <JsonEditor editorRef={editorRef} />
           </Section>
-
-          <BaseButton
-            type="button"
-            className="fixed bottom-12 right-2 z-10 rounded-full bg-blue-500 p-4"
-            onClick={handleToggleJSON}
-            variant="empty"
-          >
-            <RefreshCw color="white" />
-          </BaseButton>
         </Container>
       </div>
       <div className="fixed bottom-0 w-screen">
@@ -207,6 +262,15 @@ const App: React.FC = () => {
         onClose={() => setErrorDisplay({ state: false, message: "" })}
         errorMessage={errorDisplay.message}
       />
+      {isOpen && (
+        <DialogTemplate
+          title={`The Thing Description "${pendingTitle}" was received from the other application.`}
+          description={`Do you wish to open the following TD  in the editdor?`}
+          onHandleEventRightButton={onHandleEventRightButton}
+          rightButton="Confirm"
+          onHandleEventLeftButton={onHandleEventLeftButton}
+        ></DialogTemplate>
+      )}
     </main>
   );
 };
