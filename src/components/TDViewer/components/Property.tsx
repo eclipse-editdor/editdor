@@ -23,11 +23,24 @@ import AddFormDialog from "../../Dialogs/AddFormDialog";
 import AddFormElement from "../base/AddFormElement";
 import { copyAffordance } from "../../../utils/copyAffordance";
 import AffordanceButtons from "./AffordanceButtons";
-const alreadyRenderedKeys = ["title", "forms", "description"];
+
 interface IProperty {
-  prop: any;
+  prop: {
+    title: string;
+    forms: Array<{
+      href: string;
+      contentType?: string;
+      op?: string | string[];
+      [key: string]: any;
+    }>;
+    description?: string;
+    [key: string]: any;
+  };
   propName: string;
 }
+
+const alreadyRenderedKeys = ["title", "forms", "description"];
+
 const Property: React.FC<IProperty> = ({ prop, propName }) => {
   const context = useContext(ediTDorContext);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -62,7 +75,7 @@ const Property: React.FC<IProperty> = ({ prop, propName }) => {
       id={`property-${propName}`}
       className={`mb-2 ${isExpanded ? "overflow-hidden rounded-lg bg-gray-500" : ""}`}
       open={isExpanded}
-      onToggle={() => setIsExpanded(!isExpanded)}
+      onToggle={(e) => setIsExpanded(e.currentTarget.open)}
     >
       <summary className="flex cursor-pointer items-center py-1 pl-2 text-xl font-bold text-white">
         <h3 className="flex-grow px-2">{prop.title ?? propName}</h3>

@@ -62,7 +62,7 @@ const Event: React.FC<IEvent> = ({ event, eventName }) => {
       id={`event-${eventName}`}
       className={`mb-2 ${isExpanded ? "overflow-hidden rounded-lg bg-gray-500" : ""}`}
       open={isExpanded}
-      onToggle={() => setIsExpanded(!isExpanded)}
+      onToggle={(e) => setIsExpanded(e.currentTarget.open)}
     >
       <summary className="flex cursor-pointer items-center py-1 pl-2 text-xl font-bold text-white">
         <div className="flex-grow px-2">{event.title ?? eventName}</div>

@@ -63,7 +63,7 @@ const Action: React.FC<IAction> = ({ action, actionName }) => {
       id={`action-${actionName}`}
       className={`mb-2 ${isExpanded ? "overflow-hidden rounded-lg bg-gray-500" : ""}`}
       open={isExpanded}
-      onToggle={() => setIsExpanded(!isExpanded)}
+      onToggle={(e) => setIsExpanded(e.currentTarget.open)}
     >
       <summary className="flex cursor-pointer items-center py-1 pl-2 text-xl font-bold text-white">
         <h3 className="flex-grow px-2">{action.title ?? actionName}</h3>
