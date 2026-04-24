@@ -38,6 +38,8 @@ import ErrorDialog from "../../Dialogs/ErrorDialog";
 import { readAllReadablePropertyForms } from "../../../services/thingsApiService";
 import { AlertTriangle } from "react-feather";
 import { getErrorSummary } from "../../../utils/arrays";
+import { copyAffordance } from "../../../utils/copyAffordance";
+import type { IInteractionAffordance } from "../../../types/form";
 
 const SORT_ASC = "asc";
 const SORT_DESC = "desc";
@@ -48,6 +50,12 @@ interface IInteractionSectionProps {
 }
 
 type InteractionKey = "properties" | "actions" | "events";
+
+interface ICopiedAffordanceTarget {
+  section: InteractionKey;
+  name: string;
+  token: number;
+}
 
 /**
  * Renders a section for an interaction (Property, Action, Event) with a
@@ -99,6 +107,8 @@ const InteractionSection: React.FC<IInteractionSectionProps> = (props) => {
   >({});
 
   const [isTestingAll, setIsTestingAll] = useState(false);
+  const [copiedAffordance, setCopiedAffordance] =
+    useState<ICopiedAffordanceTarget | null>(null);
 
   const interaction = props.interaction.toLowerCase() as InteractionKey;
 
@@ -381,6 +391,26 @@ const InteractionSection: React.FC<IInteractionSectionProps> = (props) => {
     });
   };
 
+  const handleCopyAffordance = (
+    section: InteractionKey,
+    originalName: string,
+    affordance: IInteractionAffordance
+  ) => {
+    const { updatedTD, newName } = copyAffordance({
+      parsedTD: context.parsedTD,
+      section,
+      originalName,
+      affordance,
+    });
+
+    context.updateOfflineTD(JSON.stringify(updatedTD, null, 2));
+    setCopiedAffordance({
+      section,
+      name: newName,
+      token: Date.now(),
+    });
+  };
+
   const buildChildren = () => {
     const filteredInteractions = applyFilter();
 
@@ -390,7 +420,22 @@ const InteractionSection: React.FC<IInteractionSectionProps> = (props) => {
           <Property
             prop={(filteredInteractions as any)[key]}
             propName={key}
-            key={index}
+            copiedToken={
+              copiedAffordance?.section === "properties" &&
+              copiedAffordance.name === key
+                ? copiedAffordance.token
+                : undefined
+            }
+            onCopy={() =>
+              handleCopyAffordance(
+                "properties",
+                key,
+                (
+                  filteredInteractions as Record<string, IInteractionAffordance>
+                )[key]
+              )
+            }
+            key={key}
           />
         ));
       }
@@ -475,20 +520,50 @@ const InteractionSection: React.FC<IInteractionSectionProps> = (props) => {
       );
     }
     if (td.actions && interaction === "actions") {
-      return Object.keys(filteredInteractions).map((key, index) => (
+      return Object.keys(filteredInteractions).map((key) => (
         <Action
           action={(filteredInteractions as any)[key]}
           actionName={key}
-          key={index}
+          copiedToken={
+            copiedAffordance?.section === "actions" &&
+            copiedAffordance.name === key
+              ? copiedAffordance.token
+              : undefined
+          }
+          onCopy={() =>
+            handleCopyAffordance(
+              "actions",
+              key,
+              (filteredInteractions as Record<string, IInteractionAffordance>)[
+                key
+              ]
+            )
+          }
+          key={key}
         />
       ));
     }
     if (td.events && interaction === "events") {
-      return Object.keys(filteredInteractions).map((key, index) => (
+      return Object.keys(filteredInteractions).map((key) => (
         <Event
           event={(filteredInteractions as any)[key]}
           eventName={key}
-          key={index}
+          copiedToken={
+            copiedAffordance?.section === "events" &&
+            copiedAffordance.name === key
+              ? copiedAffordance.token
+              : undefined
+          }
+          onCopy={() =>
+            handleCopyAffordance(
+              "events",
+              key,
+              (filteredInteractions as Record<string, IInteractionAffordance>)[
+                key
+              ]
+            )
+          }
+          key={key}
         />
       ));
     }

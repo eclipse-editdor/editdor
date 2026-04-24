@@ -10,7 +10,7 @@
  *
  * SPDX-License-Identifier: EPL-2.0 OR W3C-20150513
  ********************************************************************************/
-import React, { useContext, useState, useRef } from "react";
+import React, { useContext, useRef } from "react";
 import ediTDorContext from "../../../context/ediTDorContext";
 import {
   buildAttributeListObject,
@@ -21,20 +21,23 @@ import InfoIconWrapper from "../../base/InfoIconWrapper";
 import { getFormsTooltipContent } from "../../../utils/TooltipMapper";
 import Form from "./Form";
 import AddFormElement from "../base/AddFormElement";
-import { copyAffordance } from "../../../utils/copyAffordance";
 import AffordanceButtons from "./AffordanceButtons";
-import type { InteractionAffordance } from "../../../types/form";
+import type { IInteractionAffordance } from "../../../types/form";
+import { useCopiedAffordanceFocus } from "../../../hooks/useCopiedAffordanceFocus";
 const alreadyRenderedKeys = ["title", "forms", "description"];
 interface IEvent {
-  event: InteractionAffordance;
+  event: IInteractionAffordance;
   eventName: string;
+  copiedToken?: number;
+  onCopy: () => void;
 }
-const Event: React.FC<IEvent> = ({ event, eventName }) => {
+const Event: React.FC<IEvent> = ({ event, eventName, copiedToken, onCopy }) => {
   const context = useContext(ediTDorContext);
-  const [isExpanded, setIsExpanded] = useState(false);
   const addFormDialog = useRef<{ openModal: () => void; close: () => void }>(
     null
   );
+  const { containerRef, isExpanded, isHighlighted, setIsExpanded } =
+    useCopiedAffordanceFocus({ copiedToken });
   const forms = separateForms(event.forms);
   const attributeListObject = buildAttributeListObject(
     { name: eventName },
@@ -44,26 +47,12 @@ const Event: React.FC<IEvent> = ({ event, eventName }) => {
   const handleDelete = () => {
     context.removeOneOfAKindReducer("events", eventName);
   };
-  const handleCopy = () => {
-    const { updatedTD, newName } = copyAffordance({
-      parsedTD: context.parsedTD,
-      section: "events",
-      originalName: eventName,
-      affordance: event,
-    });
-    context.updateOfflineTD(JSON.stringify(updatedTD, null, 2));
-    setIsExpanded(true);
-    setTimeout(() => {
-      document
-        .getElementById(`event-${newName}`)
-        ?.scrollIntoView({ behavior: "smooth", block: "center" });
-    }, 100);
-  };
 
   return (
     <details
+      ref={containerRef}
       id={`event-${eventName}`}
-      className={`mb-2 ${isExpanded ? "overflow-hidden rounded-lg bg-gray-500" : ""}`}
+      className={`mb-2 rounded-lg transition-all ${isExpanded ? "overflow-hidden bg-gray-500" : ""} ${isHighlighted ? "border-2 border-green-400 ring-2 ring-green-300/70" : ""}`}
       open={isExpanded}
       onToggle={(e) => setIsExpanded(e.currentTarget.open)}
     >
@@ -76,7 +65,7 @@ const Event: React.FC<IEvent> = ({ event, eventName }) => {
             onCopy={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              handleCopy();
+              onCopy();
             }}
             onDelete={(e) => {
               e.preventDefault();

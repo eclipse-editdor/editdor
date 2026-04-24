@@ -29,6 +29,7 @@ const AffordanceButtons: React.FC<IProps> = ({
   return (
     <div className="flex self-stretch">
       <button
+        aria-label={copyTitle}
         className="flex w-14 items-center justify-center bg-gray-400 transition-colors hover:bg-gray-500"
         title={copyTitle}
         onClick={onCopy}
@@ -37,6 +38,7 @@ const AffordanceButtons: React.FC<IProps> = ({
       </button>
 
       <button
+        aria-label={deleteTitle}
         className="flex w-14 items-center justify-center rounded-tr-lg border-l border-gray-500 bg-gray-400 transition-colors hover:bg-gray-500"
         title={deleteTitle}
         onClick={onDelete}
