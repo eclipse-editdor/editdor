@@ -10,12 +10,18 @@
  *
  * SPDX-License-Identifier: EPL-2.0 OR W3C-20150513
  ********************************************************************************/
-import { forwardRef, useContext, useState, useImperativeHandle } from "react";
+import React, {
+  forwardRef,
+  useContext,
+  useState,
+  useImperativeHandle,
+} from "react";
 import ReactDOM from "react-dom";
 import ediTDorContext from "../../context/ediTDorContext";
 import { checkIfFormIsInItem } from "../../utils/tdOperations";
 import DialogTemplate from "./DialogTemplate";
 import AddForm from "../App/AddForm";
+import type { IExplicitForm, IInteractionAffordance } from "../../types/form";
 
 export type OperationsType = "property" | "action" | "event" | "thing" | "";
 export type OperationsMap = PropertyMap | ActionMap | EventMap | ThingMap;
@@ -36,23 +42,18 @@ type ThingMap =
     ]
   | [];
 
-export interface AddFormDialogRef {
+export interface IAddFormDialogRef {
   openModal: () => void;
   close: () => void;
 }
 
-export interface ExplicitForm {
-  op: string[] | string;
-  href: string;
-}
-
-interface AddFormDialogProps {
+interface IAddFormDialogProps {
   type?: OperationsType;
-  interaction?: { forms?: ExplicitForm[]; type?: string };
+  interaction?: IInteractionAffordance;
   interactionName?: string;
 }
 
-const AddFormDialog = forwardRef<AddFormDialogRef, AddFormDialogProps>(
+const AddFormDialog = forwardRef<IAddFormDialogRef, IAddFormDialogProps>(
   (props, ref) => {
     const context: IEdiTDorContext = useContext(ediTDorContext);
     const [display, setDisplay] = useState<boolean>(() => {
@@ -64,7 +65,7 @@ const AddFormDialog = forwardRef<AddFormDialogRef, AddFormDialogProps>(
 
     const type: OperationsType = props.type || "";
     const name = type && type[0].toUpperCase() + type.slice(1);
-    const interaction = props.interaction ?? {};
+    const interaction = props.interaction;
     const interactionName = props.interactionName ?? "";
 
     useImperativeHandle(ref, () => {
@@ -111,10 +112,10 @@ const AddFormDialog = forwardRef<AddFormDialogRef, AddFormDialogProps>(
       }
     };
 
-    const checkDuplicates = (form: ExplicitForm): boolean => {
+    const checkDuplicates = (form: IExplicitForm): boolean => {
       const isDuplicate: boolean =
-        interaction.forms !== undefined
-          ? checkIfFormIsInItem(form, interaction as { forms: ExplicitForm[] })
+        interaction?.forms !== undefined
+          ? checkIfFormIsInItem(form, { forms: interaction.forms })
           : false;
       return isDuplicate;
     };
@@ -131,7 +132,7 @@ const AddFormDialog = forwardRef<AddFormDialogRef, AddFormDialogProps>(
     };
 
     const onHandleEventRightButton = () => {
-      const form: ExplicitForm = {
+      const form: IExplicitForm = {
         op: operations(type)
           .map((x) => {
             const element = document.getElementById(

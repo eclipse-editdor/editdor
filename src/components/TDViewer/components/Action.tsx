@@ -23,16 +23,19 @@ import Form from "./Form";
 import AddFormElement from "../base/AddFormElement";
 import { copyAffordance } from "../../../utils/copyAffordance";
 import AffordanceButtons from "./AffordanceButtons";
+import type { IInteractionAffordance } from "../../../types/form";
 const alreadyRenderedKeys = ["title", "forms", "description"];
 
 interface IAction {
-  action: any;
+  action: IInteractionAffordance;
   actionName: string;
 }
 const Action: React.FC<IAction> = ({ action, actionName }) => {
   const context = useContext(ediTDorContext);
   const [isExpanded, setIsExpanded] = useState(false);
-  const addFormDialog = useRef<{ openModal: () => void }>(null);
+  const addFormDialog = useRef<{ openModal: () => void; close: () => void }>(
+    null
+  );
   const forms = separateForms(action.forms);
   const attributeListObject = buildAttributeListObject(
     { name: actionName },
@@ -116,7 +119,7 @@ const Action: React.FC<IAction> = ({ action, actionName }) => {
 
         {forms.map((form, i) => (
           <Form
-            key={`${i}-${form?.href ?? "nohref"}`}
+            key={`${i}-${form?.href}`}
             form={form}
             propName={actionName}
             interactionType="action"

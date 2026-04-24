@@ -23,19 +23,10 @@ import AddFormDialog from "../../Dialogs/AddFormDialog";
 import AddFormElement from "../base/AddFormElement";
 import { copyAffordance } from "../../../utils/copyAffordance";
 import AffordanceButtons from "./AffordanceButtons";
+import type { IInteractionAffordance } from "../../../types/form";
 
 interface IProperty {
-  prop: {
-    title: string;
-    forms: Array<{
-      href: string;
-      contentType?: string;
-      op?: string | string[];
-      [key: string]: any;
-    }>;
-    description?: string;
-    [key: string]: any;
-  };
+  prop: IInteractionAffordance;
   propName: string;
 }
 
@@ -44,7 +35,9 @@ const alreadyRenderedKeys = ["title", "forms", "description"];
 const Property: React.FC<IProperty> = ({ prop, propName }) => {
   const context = useContext(ediTDorContext);
   const [isExpanded, setIsExpanded] = useState(false);
-  const addFormDialog = useRef<{ openModal: () => void }>(null);
+  const addFormDialog = useRef<{ openModal: () => void; close: () => void }>(
+    null
+  );
   const forms = separateForms(structuredClone(prop.forms));
   const attributeListObject = buildAttributeListObject(
     { name: propName },

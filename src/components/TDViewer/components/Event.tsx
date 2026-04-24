@@ -23,15 +23,18 @@ import Form from "./Form";
 import AddFormElement from "../base/AddFormElement";
 import { copyAffordance } from "../../../utils/copyAffordance";
 import AffordanceButtons from "./AffordanceButtons";
+import type { InteractionAffordance } from "../../../types/form";
 const alreadyRenderedKeys = ["title", "forms", "description"];
 interface IEvent {
-  event: any;
+  event: InteractionAffordance;
   eventName: string;
 }
 const Event: React.FC<IEvent> = ({ event, eventName }) => {
   const context = useContext(ediTDorContext);
   const [isExpanded, setIsExpanded] = useState(false);
-  const addFormDialog = useRef<{ openModal: () => void }>(null);
+  const addFormDialog = useRef<{ openModal: () => void; close: () => void }>(
+    null
+  );
   const forms = separateForms(event.forms);
   const attributeListObject = buildAttributeListObject(
     { name: eventName },

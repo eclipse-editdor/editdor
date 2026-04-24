@@ -13,14 +13,14 @@
 import React from "react";
 import { Copy, Trash2 } from "react-feather";
 
-interface Props {
+interface IProps {
   onCopy: (e: React.MouseEvent) => void;
   onDelete: (e: React.MouseEvent) => void;
   copyTitle: string;
   deleteTitle: string;
 }
 
-const AffordanceButtons: React.FC<Props> = ({
+const AffordanceButtons: React.FC<IProps> = ({
   onCopy,
   onDelete,
   copyTitle,
