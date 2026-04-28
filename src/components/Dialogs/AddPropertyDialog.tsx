@@ -27,12 +27,12 @@ import DialogTemplate from "./DialogTemplate";
 
 const NO_TYPE = "undefined";
 
-export interface AddPropertyDialogRef {
+export interface IAddPropertyDialogRef {
   openModal: () => void;
   close?: () => void;
 }
 
-interface Property {
+interface IProperty {
   title: string;
   description?: string;
   type?: string;
@@ -43,7 +43,7 @@ interface Property {
   properties?: Record<string, any>;
 }
 
-export const AddPropertyDialog = forwardRef<AddPropertyDialogRef, {}>(
+export const AddPropertyDialog = forwardRef<IAddPropertyDialogRef, {}>(
   (_, ref) => {
     const context = useContext(ediTDorContext);
     const [display, setDisplay] = React.useState<boolean>(() => {
@@ -115,7 +115,7 @@ export const AddPropertyDialog = forwardRef<AddPropertyDialogRef, {}>(
         return;
       }
 
-      const property: Property = {
+      const property: IProperty = {
         title: (document.getElementById(`${type}-title`) as HTMLInputElement)
           .value,
         observable: (
