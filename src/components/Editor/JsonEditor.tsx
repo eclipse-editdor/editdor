@@ -27,13 +27,6 @@ import { IValidationMessage } from "../../types/context";
 type SchemaMapMessage = Map<string, Record<string, unknown>>;
 
 // List of all Options can be found here: https://microsoft.github.io/monaco-editor/docs.html#interfaces/editor.IStandaloneEditorConstructionOptions.html
-const editorOptions: editor.IStandaloneEditorConstructionOptions = {
-  selectOnLineNumbers: true,
-  automaticLayout: true,
-  lineDecorationsWidth: 20,
-  tabSize: 2,
-  insertSpaces: true,
-};
 
 // delay function that executes the callback once it hasn't been called for
 // at least x ms.
@@ -54,6 +47,7 @@ interface JsonSchemaEntry {
 const JsonEditor: React.FC<JsonEditorProps> = ({ editorRef }) => {
   const context = useContext(ediTDorContext);
 
+  const jsonIndentation = context.jsonIndentation ?? 2;
   const [schemas] = useState<JsonSchemaEntry[]>([]);
   const [proxy, setProxy] = useState<any>(undefined);
   const editorInstance = useRef<editor.IStandaloneCodeEditor | null>(null);
@@ -85,6 +79,8 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ editorRef }) => {
   );
 
   useEffect(() => {
+    if (!proxy) return;
+
     const updateMonacoSchemas = (schemaMap: SchemaMapMessage) => {
       proxy.splice(0, proxy.length);
 
@@ -165,10 +161,8 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ editorRef }) => {
     setProxy(proxy);
   };
 
-  const onChange: OnChange = async (editorText: string | undefined) => {
-    if (!editorText) {
-      return;
-    }
+  const onChange: OnChange = (editorText: string | undefined) => {
+    if (!editorText) return;
     let validate: IValidationMessage = {
       report: {
         json: null,
@@ -199,15 +193,19 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ editorRef }) => {
       },
       customMessage: "",
     };
+
     try {
       JSON.parse(editorText);
-      context.updateOfflineTD(editorText);
 
+      if (editorText !== context.offlineTD) {
+        context.updateOfflineTD(editorText);
+      }
+
+      setLocalTextState(editorText);
       context.updateValidationMessage(validate);
+
+      delay(messageWorkers, editorText, 500);
     } catch (error) {
-      let message: string =
-        "Invalid JSON: " +
-        (error instanceof Error ? error.message : String(error));
       validate.report.json = "failed";
       context.updateValidationMessage(validate);
       setLocalTextState(editorText);
@@ -242,6 +240,19 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ editorRef }) => {
     }
   }, [context.linkedTd, context.offlineTD]);
 
+  useEffect(() => {
+    try {
+      const parsed = JSON.parse(context.offlineTD);
+      const formatted = JSON.stringify(parsed, null, jsonIndentation);
+
+      if (formatted !== context.offlineTD) {
+        context.updateOfflineTD(formatted);
+      }
+    } catch {
+      // ignore invalid JSON
+    }
+  }, [jsonIndentation, context.offlineTD]);
+
   const changeLinkedTd = async () => {
     let href = (document.getElementById("linkedTd") as HTMLSelectElement).value;
     changeBetweenTd(context, href);
@@ -254,6 +265,18 @@ const JsonEditor: React.FC<JsonEditorProps> = ({ editorRef }) => {
       schemas: [],
     });
   };
+
+  const editorOptions = useMemo(
+    () => ({
+      selectOnLineNumbers: true,
+      automaticLayout: true,
+      lineDecorationsWidth: 20,
+      tabSize: jsonIndentation,
+      insertSpaces: true,
+      detectIndentation: false,
+    }),
+    [jsonIndentation]
+  );
 
   return (
     <>

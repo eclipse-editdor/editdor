@@ -17,6 +17,8 @@ interface IDropdownProps {
   id: string;
   label: string;
   options: string[];
+  value?: string;
+  onChange?: (event: React.ChangeEvent<HTMLSelectElement>) => void;
   className?: string;
 }
 
@@ -33,6 +35,8 @@ const Dropdown: React.FC<IDropdownProps> = (props) => {
         <select
           className="block w-full appearance-none rounded border-2 border-gray-600 bg-gray-600 px-4 py-3 pr-8 leading-tight text-white focus:border-blue-500 focus:outline-none"
           id={props.id}
+          value={props.value}
+          onChange={props.onChange}
         >
           {props.options.map((e) => {
             return <option key={e}>{e}</option>;

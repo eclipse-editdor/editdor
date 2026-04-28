@@ -13,6 +13,8 @@ declare global {
 
     northboundConnection: INorthboundConnection;
     contributeCatalog: IContributeCatalog;
+    jsonIndentation: 2 | 4;
+    updateJsonIndentation: (value: 2 | 4) => void;
 
     // Callback functions
     updateOfflineTD: (td: string) => void;
@@ -106,6 +108,7 @@ declare global {
     | "updateValidationMessage"
     | "updateNorthboundConnection"
     | "updateContributeCatalog"
+    | "updateJsonIndentation"
   >;
 
   type Action =
@@ -141,7 +144,8 @@ declare global {
     | {
         type: "UPDATE_CONTRIBUTE_CATALOG";
         contributeCatalog: IContributeCatalog;
-      };
+      }
+    | { type: "UPDATE_JSON_INDENTATION"; value: 2 | 4 };
 
   declare type Validation = "VALID" | "INVALID" | "VALIDATING" | null;
   declare type ActiveSection =
