@@ -26,6 +26,8 @@ import {
   Share,
   Link,
   Send,
+  Eye,
+  EyeOff,
 } from "react-feather";
 import editdorLogo from "../../assets/editdor.png";
 import ediTDorContext from "../../context/ediTDorContext";
@@ -49,7 +51,10 @@ const INVALID_TYPE_MESSAGE =
 const VALIDATION_FAILED_MESSAGE =
   "The Thing Model did not pass the JSON schema validation Please make sure the Thing Model is valid according to the JSON schema before contributing it to the catalog.";
 
-const AppHeader: React.FC = () => {
+const AppHeader: React.FC<{
+  onToggleJSON: () => void;
+  isJSONVisible: boolean;
+}> = ({ onToggleJSON, isJSONVisible }) => {
   const context = useContext(ediTDorContext);
   const td: ThingDescription = context.parsedTD;
   /** States*/
@@ -334,6 +339,12 @@ const AppHeader: React.FC = () => {
           <Button onClick={handleOpenSettingsDialog}>
             <Settings />
             <div className="text-xs">Settings</div>
+          </Button>
+          <Button onClick={onToggleJSON}>
+            {isJSONVisible ? <EyeOff /> : <Eye />}
+            <div className="text-xs">
+              {isJSONVisible ? "Hide Code" : "Show Code"}
+            </div>
           </Button>
         </div>
       </header>

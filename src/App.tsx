@@ -51,6 +51,8 @@ const App = () => {
   const context = useContext(ediTDorContext);
 
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
+  const [doShowJSON, setDoShowJSON] = useState(true);
+  const [containerKey, setContainerKey] = useState(0);
   const [customBreakpointsState, setCustomBreakpointsState] = useState(0);
   const tdViewerRef = useRef<HTMLDivElement>(null);
   const [pendingTd, setPendingTd] = useState<string>("");
@@ -81,6 +83,10 @@ const App = () => {
     }
   };
 
+  const handleToggleJSON = () => {
+    setDoShowJSON((prev) => !prev);
+    setContainerKey((prev) => prev + 1);
+      
   const isLoadTdMessage = (value: unknown): value is LoadTdMessage => {
     if (typeof value !== "object" || value === null) {
       return false;
@@ -229,11 +235,19 @@ const App = () => {
 
   return (
     <main className="flex max-h-screen w-screen flex-col">
-      <AppHeader></AppHeader>
+      <AppHeader onToggleJSON={handleToggleJSON} isJSONVisible={doShowJSON} />
 
       <div className="">
-        <Container className="height-adjust flex flex-col md:flex-row">
-          <Section minSize={550} className="w-full min-w-16 md:w-7/12">
+        <Container
+          key={containerKey}
+          className="height-adjust flex flex-col md:flex-row"
+        >
+          <Section
+            minSize={550}
+            className={`w-full min-w-16 ${
+              doShowJSON ? "md:w-7/12" : "md:w-full"
+            }`}
+          >
             <div ref={tdViewerRef} className="h-full w-full">
               <TDViewer
                 onUndo={handleUndo}
@@ -243,6 +257,24 @@ const App = () => {
             </div>
           </Section>
 
+          {doShowJSON && (
+            <>
+              <Bar
+                size={doShowJSON ? 7.5 : 0}
+                className={`cursor-col-resize bg-gray-300 hover:bg-blue-500 ${
+                  doShowJSON ? "" : "hidden"
+                }`}
+              />
+
+              <Section
+                className={`w-full ${
+                  doShowJSON ? "md:w-5/12" : "md:w-0"
+                } overflow-hidden`}
+              >
+                {doShowJSON && <JsonEditor editorRef={editorRef} />}
+              </Section>
+            </>
+          )}
           <Bar
             size={7.5}
             className="cursor-col-resize bg-gray-300 hover:bg-blue-500"
