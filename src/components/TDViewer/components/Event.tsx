@@ -10,8 +10,7 @@
  *
  * SPDX-License-Identifier: EPL-2.0 OR W3C-20150513
  ********************************************************************************/
-import React, { useContext, useState } from "react";
-import { Trash2 } from "react-feather";
+import React, { useContext, useRef } from "react";
 import ediTDorContext from "../../../context/ediTDorContext";
 import {
   buildAttributeListObject,
@@ -22,101 +21,90 @@ import InfoIconWrapper from "../../base/InfoIconWrapper";
 import { getFormsTooltipContent } from "../../../utils/TooltipMapper";
 import Form from "./Form";
 import AddFormElement from "../base/AddFormElement";
-
+import AffordanceButtons from "./AffordanceButtons";
+import type { IInteractionAffordance } from "../../../types/form";
+import { useCopiedAffordanceFocus } from "../../../hooks/useCopiedAffordanceFocus";
 const alreadyRenderedKeys = ["title", "forms", "description"];
-
-const Event: React.FC<any> = (props) => {
+interface IEvent {
+  event: IInteractionAffordance;
+  eventName: string;
+  copiedToken?: number;
+  onCopy: () => void;
+}
+const Event: React.FC<IEvent> = ({ event, eventName, copiedToken, onCopy }) => {
   const context = useContext(ediTDorContext);
-
-  const [isExpanded, setIsExpanded] = useState(false);
-
-  const addFormDialog = React.useRef();
-  const handleOpenAddFormDialog = () => {
-    addFormDialog.current.openModal();
-  };
-
-  if (
-    Object.keys(props.event).length === 0 &&
-    props.event.constructor !== Object
-  ) {
-    return (
-      <div className="text-3xl text-white">
-        Event could not be rendered because mandatory fields are missing.
-      </div>
-    );
-  }
-
-  const event = props.event;
-  const forms = separateForms(props.event.forms);
+  const addFormDialog = useRef<{ openModal: () => void; close: () => void }>(
+    null
+  );
+  const { containerRef, isExpanded, isHighlighted, setIsExpanded } =
+    useCopiedAffordanceFocus({ copiedToken });
+  const forms = separateForms(event.forms);
   const attributeListObject = buildAttributeListObject(
-    { name: props.eventName },
-    props.event,
+    { name: eventName },
+    event,
     alreadyRenderedKeys
   );
-  const attributes = Object.keys(attributeListObject).map((x) => {
-    return (
-      <li key={x}>
-        {x} : {JSON.stringify(attributeListObject[x])}
-      </li>
-    );
-  });
-
-  const handleDeleteEventClicked = () => {
-    context.removeOneOfAKindReducer("events", props.eventName);
+  const handleDelete = () => {
+    context.removeOneOfAKindReducer("events", eventName);
   };
 
   return (
     <details
-      className="mb-1"
+      ref={containerRef}
+      id={`event-${eventName}`}
+      className={`mb-2 rounded-lg transition-all ${isExpanded ? "overflow-hidden bg-gray-500" : ""} ${isHighlighted ? "border-2 border-green-400 ring-2 ring-green-300/70" : ""}`}
       open={isExpanded}
-      onToggle={() => setIsExpanded(!isExpanded)}
+      onToggle={(e) => setIsExpanded(e.currentTarget.open)}
     >
-      <summary
-        className={`flex cursor-pointer items-center rounded-t-lg pl-2 text-xl font-bold text-white ${isExpanded ? "bg-gray-500" : ""}`}
-      >
-        <div className="flex-grow px-2">{event.title ?? props.eventName}</div>
+      <summary className="flex cursor-pointer items-center py-1 pl-2 text-xl font-bold text-white">
+        <div className="flex-grow px-2">{event.title ?? eventName}</div>
         {isExpanded && (
-          <button
-            className="flex h-10 w-10 items-center justify-center self-stretch rounded-bl-md rounded-tr-md bg-gray-400 text-base"
-            onClick={handleDeleteEventClicked}
-          >
-            <Trash2 size={16} color="white" />
-          </button>
+          <AffordanceButtons
+            copyTitle="Copy event"
+            deleteTitle="Delete event"
+            onCopy={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onCopy();
+            }}
+            onDelete={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handleDelete();
+            }}
+          />
         )}
       </summary>
-
-      <div className="mb-4 rounded-b-lg bg-gray-500 px-2 pb-4">
+      <div className="px-2 pb-4">
         {event.description && (
           <div className="px-2 pb-2 text-lg text-gray-400">
             {event.description}
           </div>
         )}
-        <ul className="list-disc pl-6 text-base text-gray-300">{attributes}</ul>
-
-        <div className="flex items-center justify-start pb-2 pt-2">
-          <InfoIconWrapper
-            className="flex-grow"
-            tooltip={getFormsTooltipContent()}
-            id="events"
-          >
-            <h4 className="pr-1 text-lg font-bold text-white">Forms</h4>
-          </InfoIconWrapper>
-        </div>
-
-        <AddFormElement onClick={handleOpenAddFormDialog} />
+        <ul className="list-disc pl-6 text-base text-gray-300">
+          {Object.entries(attributeListObject).map(([k, v]) => (
+            <li key={k}>
+              {k}: {JSON.stringify(v)}
+            </li>
+          ))}
+        </ul>
+        <InfoIconWrapper tooltip={getFormsTooltipContent()} id="events">
+          <h4 className="text-lg font-bold text-white">Forms</h4>
+        </InfoIconWrapper>
+        <AddFormElement onClick={() => addFormDialog.current?.openModal()} />
         <AddFormDialog
-          type={"event"}
+          type="event"
           interaction={event}
-          interactionName={props.eventName}
+          interactionName={eventName}
           ref={addFormDialog}
         />
         {forms.map((form, i) => (
           <Form
             key={`${i}-${form.href}`}
             form={form}
-            propName={props.eventName}
-            interactionType={"event"}
-          ></Form>
+            propName={eventName}
+            interactionType="event"
+          />
         ))}
       </div>
     </details>

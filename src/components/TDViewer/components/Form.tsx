@@ -15,7 +15,7 @@ import ediTDorContext from "../../../context/ediTDorContext";
 import FormDetails from "../base/FormDetails";
 import UndefinedForm from "../base/UndefinedForm";
 import { formConfigurations } from "../../../services/form";
-import type { OpKeys } from "../../../types/form";
+import type { FormProps, OpKeys } from "../../../types/form";
 
 const typeToJSONKey = (type: string): string => {
   const typeToJSONKey: Record<string, string> = {
@@ -29,12 +29,7 @@ const typeToJSONKey = (type: string): string => {
 };
 
 interface IFormComponentProps {
-  form: {
-    href: string;
-    contentType: string;
-    op: string;
-    actualIndex: number;
-  };
+  form: FormProps;
   propName: string;
   interactionType: "thing" | "property" | "action" | "event";
 }

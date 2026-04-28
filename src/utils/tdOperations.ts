@@ -11,8 +11,8 @@
  * SPDX-License-Identifier: EPL-2.0 OR W3C-20150513
  ********************************************************************************/
 
-import { ExplicitForm } from "components/Dialogs/AddFormDialog";
 import { direction } from "direction";
+import type { ExplicitForm, FormProps, InteractionForm } from "types/form";
 
 /**
  * @param {Object} td
@@ -69,26 +69,32 @@ export const buildAttributeListObject = (
  * Converts Forms that have an array as the "op" value into multiple separate Forms
  * which only have a string as "op" value.
  */
-export const separateForms = (forms) => {
-  if (forms === undefined && !forms) {
+export const separateForms = (
+  forms: InteractionForm[] | undefined
+): FormProps[] => {
+  if (forms === undefined || forms === null) {
     return [];
   }
 
-  const newForms = [];
+  const newForms: FormProps[] = [];
 
   for (let i = 0; i < forms.length; i++) {
     const form = forms[i];
 
     if (!Array.isArray(form.op)) {
-      form.actualIndex = i;
-      newForms.push(form);
+      newForms.push({
+        ...form,
+        actualIndex: i,
+      });
       continue;
     }
 
     for (let j = 0; j < form.op.length; j++) {
-      const temp = { ...form };
-      temp.op = form.op[j];
-      temp.actualIndex = i;
+      const temp: FormProps = {
+        ...form,
+        op: form.op[j],
+        actualIndex: i,
+      };
       newForms.push(temp);
     }
   }
@@ -110,7 +116,7 @@ export const checkIfLinkIsInItem = (link, itemToCheck) => {
 
 export const checkIfFormIsInItem = (
   form: ExplicitForm,
-  itemToCheck: { forms: ExplicitForm[] }
+  itemToCheck: { forms: InteractionForm[] }
 ): boolean => {
   for (const element of itemToCheck.forms) {
     if (typeof element.op === "undefined") {
@@ -148,7 +154,7 @@ export const checkIfFormIsInItem = (
 
 export const checkIfFormIsInElement = (
   form: ExplicitForm & { op: string },
-  element: ExplicitForm
+  element: InteractionForm
 ): boolean => {
   if (typeof element.op === "undefined") {
     return false;

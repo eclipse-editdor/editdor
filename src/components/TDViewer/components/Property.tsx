@@ -10,8 +10,7 @@
  *
  * SPDX-License-Identifier: EPL-2.0 OR W3C-20150513
  ********************************************************************************/
-import React, { useContext, useState, useRef } from "react";
-import { Trash2 } from "react-feather";
+import React, { useContext, useRef } from "react";
 import ediTDorContext from "../../../context/ediTDorContext";
 import {
   buildAttributeListObject,
@@ -22,119 +21,97 @@ import { getFormsTooltipContent } from "../../../utils/TooltipMapper";
 import Form from "./Form";
 import AddFormDialog from "../../Dialogs/AddFormDialog";
 import AddFormElement from "../base/AddFormElement";
+import AffordanceButtons from "./AffordanceButtons";
+import type { IInteractionAffordance } from "../../../types/form";
+import { useCopiedAffordanceFocus } from "../../../hooks/useCopiedAffordanceFocus";
+
+interface IProperty {
+  prop: IInteractionAffordance;
+  propName: string;
+  copiedToken?: number;
+  onCopy: () => void;
+}
 
 const alreadyRenderedKeys = ["title", "forms", "description"];
 
-interface IProperty {
-  prop: {
-    title: string;
-    forms: Array<{
-      href: string;
-      contentType?: string;
-      op?: string | string[];
-      [key: string]: any;
-    }>;
-    description?: string;
-    [key: string]: any;
-  };
-  propName: string;
-}
-const Property: React.FC<IProperty> = (props) => {
+const Property: React.FC<IProperty> = ({
+  prop,
+  propName,
+  copiedToken,
+  onCopy,
+}) => {
   const context = useContext(ediTDorContext);
-
-  const [isExpanded, setIsExpanded] = useState(false);
-
-  const addFormDialog = useRef<{ openModal: () => void }>(null);
-  const handleOpenAddFormDialog = () => {
-    addFormDialog.current?.openModal();
-  };
-
-  if (
-    Object.keys(props.prop).length === 0 &&
-    props.prop.constructor !== Object
-  ) {
-    return (
-      <div className="text-3xl text-white">
-        Property could not be rendered because mandatory fields are missing.
-      </div>
-    );
-  }
-
-  const property = props.prop;
-
-  let forms: {
-    href: string;
-    op: string;
-    contentType: string;
-    actualIndex: number;
-    [key: string]: any;
-  }[] = separateForms(structuredClone(props.prop.forms));
-
+  const addFormDialog = useRef<{ openModal: () => void; close: () => void }>(
+    null
+  );
+  const { containerRef, isExpanded, isHighlighted, setIsExpanded } =
+    useCopiedAffordanceFocus({ copiedToken });
+  const forms = separateForms(structuredClone(prop.forms));
   const attributeListObject = buildAttributeListObject(
-    { name: props.propName },
-    props.prop,
+    { name: propName },
+    prop,
     alreadyRenderedKeys
   );
-  const attributes = Object.keys(attributeListObject).map((x) => {
-    return (
-      <li key={x}>
-        {x} : {JSON.stringify(attributeListObject[x])}
-      </li>
-    );
-  });
-
-  const handleDeletePropertyClicked = () => {
-    context.removeOneOfAKindReducer("properties", props.propName);
+  const handleDeleteProperty = () => {
+    context.removeOneOfAKindReducer("properties", propName);
   };
 
   return (
     <details
-      className="mb-1"
+      ref={containerRef}
+      id={`property-${propName}`}
+      className={`mb-2 rounded-lg transition-all ${isExpanded ? "overflow-hidden bg-gray-500" : ""} ${isHighlighted ? "border-2 border-green-400 ring-2 ring-green-300/70" : ""}`}
       open={isExpanded}
-      onToggle={() => setIsExpanded(!isExpanded)}
+      onToggle={(e) => setIsExpanded(e.currentTarget.open)}
     >
-      <summary
-        className={`flex cursor-pointer items-center rounded-t-lg pl-2 text-xl font-bold text-white ${isExpanded ? "bg-gray-500" : ""}`}
-      >
-        <h3 className="flex-grow px-2">{property.title ?? props.propName}</h3>
+      <summary className="flex cursor-pointer items-center py-1 pl-2 text-xl font-bold text-white">
+        <h3 className="flex-grow px-2">{prop.title ?? propName}</h3>
         {isExpanded && (
-          <button
-            className="flex h-10 w-10 items-center justify-center self-stretch rounded-bl-md rounded-tr-md bg-gray-400 text-base"
-            onClick={handleDeletePropertyClicked}
-          >
-            <Trash2 size={16} color="white" />
-          </button>
+          <AffordanceButtons
+            copyTitle="Copy property"
+            deleteTitle="Delete property"
+            onCopy={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onCopy();
+            }}
+            onDelete={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handleDeleteProperty();
+            }}
+          />
         )}
       </summary>
-
-      <div className="mb-4 rounded-b-lg bg-gray-500 px-2 pb-4">
-        {property.description && (
+      <div className="px-2 pb-4">
+        {prop.description && (
           <div className="px-2 pb-2 text-lg text-gray-400">
-            {property.description}
+            {prop.description}
           </div>
         )}
-        <ul className="list-disc pl-6 text-base text-gray-300">{attributes}</ul>
-
-        <div className="flex items-center justify-start pb-2 pt-2">
-          <InfoIconWrapper tooltip={getFormsTooltipContent()} id="properties">
-            <h4 className="pr-1 text-lg font-bold text-white">Forms</h4>
-          </InfoIconWrapper>
-        </div>
-
-        <AddFormElement onClick={handleOpenAddFormDialog} />
+        <ul className="list-disc pl-6 text-base text-gray-300">
+          {Object.entries(attributeListObject).map(([k, v]) => (
+            <li key={k}>
+              {k}: {JSON.stringify(v)}
+            </li>
+          ))}
+        </ul>
+        <InfoIconWrapper tooltip={getFormsTooltipContent()} id="properties">
+          <h4 className="text-lg font-bold text-white">Forms</h4>
+        </InfoIconWrapper>
+        <AddFormElement onClick={() => addFormDialog.current?.openModal()} />
         <AddFormDialog
-          type={"property"}
-          interaction={property}
-          interactionName={props.propName}
+          type="property"
+          interaction={prop}
+          interactionName={propName}
           ref={addFormDialog}
         />
-
         {forms.map((form, i) => (
           <Form
             key={`${i}-${form.href}`}
-            propName={props.propName}
+            propName={propName}
             form={form}
-            interactionType={"property"}
+            interactionType="property"
           />
         ))}
       </div>

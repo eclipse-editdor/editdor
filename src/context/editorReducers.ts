@@ -97,7 +97,7 @@ const updateOfflineTDReducer = (
   try {
     parsedTD = JSON.parse(offlineTD);
   } catch (e) {
-    console.error((e as Error).message);
+    // console.error((e as Error).message);
     return {
       ...state,
       offlineTD: offlineTD,
@@ -281,16 +281,17 @@ const addFormReducer = (
   }
 
   let td = structuredClone(state.parsedTD) as ThingDescription;
-  if (level == "thing") {
+  if (level === "thing") {
     if (td.forms && !Array.isArray(td.forms)) {
       return state;
     }
 
     if (!td.forms) {
-      td.forms = undefined;
+      td.forms = [form as FormElementRoot];
+      return { ...state, offlineTD: JSON.stringify(td, null, 2), parsedTD: td };
     }
 
-    td.forms?.push(form);
+    td.forms.push(form as FormElementRoot);
     return { ...state, offlineTD: JSON.stringify(td, null, 2), parsedTD: td };
   }
 
@@ -301,10 +302,11 @@ const addFormReducer = (
 
   const interaction = td[level][interactionName];
   if (!interaction.forms) {
-    interaction.forms = [];
+    interaction.forms = [form];
+    return { ...state, offlineTD: JSON.stringify(td, null, 2), parsedTD: td };
   }
-  interaction.forms.push(form);
 
+  interaction.forms.push(form);
   return { ...state, offlineTD: JSON.stringify(td, null, 2), parsedTD: td };
 };
 
