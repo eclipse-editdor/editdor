@@ -1,82 +1,175 @@
-import React, { useRef, useState } from "react";
+/********************************************************************************
+ * Copyright (c) 2026 Contributors to the Eclipse Foundation
+ *
+ * See the NOTICE file(s) distributed with this work for additional
+ * information regarding copyright ownership.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License v. 2.0 which is available at
+ * http://www.eclipse.org/legal/epl-2.0, or the W3C Software Notice and
+ *
+ * SPDX-License-Identifier: EPL-2.0 OR W3C-20150513
+ ********************************************************************************/
+import React from "react";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, test } from "vitest";
-import SettingsDialog, {
-  SettingsDialogRef,
-} from "../components/Dialogs/SettingsDialog";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import App from "../App";
+import { decompressSharedTd } from "../share";
 
-interface SettingsHarnessProps {
-  initialJsonIndentation?: 2 | 4;
-}
+vi.mock("@node-wot/browser-bundle", () => ({
+  Core: {
+    Servient: vi.fn().mockImplementation(() => ({
+      addClientFactory: vi.fn(),
+      start: vi.fn().mockResolvedValue({
+        consume: vi.fn(),
+      }),
+    })),
+  },
+  Http: {
+    HttpClientFactory: vi.fn(),
+  },
+}));
 
-const SettingsHarness: React.FC<SettingsHarnessProps> = ({
-  initialJsonIndentation = 2,
-}) => {
-  const settingsDialogRef = useRef<SettingsDialogRef>(null);
-  const [jsonIndentation, setJsonIndentation] = useState<2 | 4>(
-    initialJsonIndentation
-  );
+vi.mock("../components/Editor/JsonEditor", () => ({
+  default: ({ jsonIndentation }: { jsonIndentation: 2 | 4 }) => (
+    <output data-testid="editor-json-indentation">{jsonIndentation}</output>
+  ),
+}));
 
-  return (
-    <>
-      <button onClick={() => settingsDialogRef.current?.openModal()}>
-        Open Settings
-      </button>
-      <SettingsDialog
-        ref={settingsDialogRef}
-        jsonIndentation={jsonIndentation}
-        onJsonIndentationChange={setJsonIndentation}
-      />
-      <output data-testid="editor-json-indentation">{jsonIndentation}</output>
-    </>
-  );
-};
+vi.mock("../components/TDViewer/TDViewer", () => ({
+  default: () => <div>TDViewer</div>,
+}));
 
-const renderSettingsDialog = (initialJsonIndentation: 2 | 4 = 2) =>
-  render(<SettingsHarness initialJsonIndentation={initialJsonIndentation} />);
+vi.mock("../share", () => ({
+  decompressSharedTd: vi.fn(),
+}));
+
+vi.mock("@column-resizer/react", () => ({
+  Container: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
+  Section: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
+  Bar: () => <div data-testid="resize-bar" />,
+}));
+
+vi.mock("../components/Dialogs/ConvertTmDialog", async () => {
+  const React = await import("react");
+
+  const MockConvertTmDialog = React.forwardRef((_props, ref) => {
+    React.useImperativeHandle(ref, () => ({
+      openModal: () => undefined,
+      close: () => undefined,
+    }));
+
+    return null;
+  });
+
+  return { default: MockConvertTmDialog };
+});
+
+vi.mock("../components/Dialogs/CreateTdDialog", async () => {
+  const React = await import("react");
+
+  const MockCreateTdDialog = React.forwardRef((_props, ref) => {
+    React.useImperativeHandle(ref, () => ({
+      openModal: () => undefined,
+    }));
+
+    return null;
+  });
+
+  return { default: MockCreateTdDialog };
+});
+
+vi.mock("../components/Dialogs/ShareDialog", async () => {
+  const React = await import("react");
+
+  const MockShareDialog = React.forwardRef((_props, ref) => {
+    React.useImperativeHandle(ref, () => ({
+      openModal: () => undefined,
+    }));
+
+    return null;
+  });
+
+  return { default: MockShareDialog };
+});
+
+vi.mock("../components/Dialogs/ContributeToCatalogDialog", async () => {
+  const React = await import("react");
+
+  const MockContributeToCatalogDialog = React.forwardRef((_props, ref) => {
+    React.useImperativeHandle(ref, () => ({
+      openModal: () => undefined,
+      close: () => undefined,
+    }));
+
+    return null;
+  });
+
+  return { default: MockContributeToCatalogDialog };
+});
+
+vi.mock("../components/Dialogs/SendTDDialog", async () => {
+  const React = await import("react");
+
+  const MockSendTdDialog = React.forwardRef((_props, ref) => {
+    React.useImperativeHandle(ref, () => ({
+      openModal: () => undefined,
+      close: () => undefined,
+    }));
+
+    return null;
+  });
+
+  return { default: MockSendTdDialog };
+});
+
+const mockedDecompressSharedTd = vi.mocked(decompressSharedTd);
+
+const renderSettingsIntegration = () => render(<App />);
 
 describe("Settings integration", () => {
   beforeEach(() => {
     localStorage.clear();
+    window.history.replaceState({}, "", "/");
 
-    const modalRoot = document.createElement("div");
-    modalRoot.id = "modal-root";
-    document.body.appendChild(modalRoot);
+    Object.defineProperty(window, "opener", {
+      configurable: true,
+      writable: true,
+      value: null,
+    });
+
+    Object.defineProperty(window, "confirm", {
+      configurable: true,
+      writable: true,
+      value: vi.fn(() => true),
+    });
+
+    class ResizeObserverMock {
+      observe() {}
+      disconnect() {}
+      unobserve() {}
+    }
+
+    vi.stubGlobal("ResizeObserver", ResizeObserverMock);
+    mockedDecompressSharedTd.mockReset();
   });
 
   afterEach(() => {
     cleanup();
+    vi.unstubAllGlobals();
+    vi.clearAllMocks();
     localStorage.clear();
-    document.getElementById("modal-root")?.remove();
+    window.history.replaceState({}, "", "/");
   });
 
-  test("opens the dialog and shows stored settings values to the user", () => {
-    localStorage.setItem("northbound", "http://localhost:8080/");
-    localStorage.setItem("southbound", "http://localhost:9090/");
-    localStorage.setItem("valuePath", "/foo/bar");
+  test("only updates JsonEditor indentation after the user saves", () => {
+    renderSettingsIntegration();
 
-    renderSettingsDialog(4);
-
-    fireEvent.click(screen.getByRole("button", { name: /open settings/i }));
-
-    expect(screen.getByText("Settings")).toBeInTheDocument();
-    expect(
-      screen.getByText("Change the ediTDors configuration to your needs")
-    ).toBeInTheDocument();
-    expect(
-      screen.getByDisplayValue("http://localhost:8080/")
-    ).toBeInTheDocument();
-    expect(
-      screen.getByDisplayValue("http://localhost:9090/")
-    ).toBeInTheDocument();
-    expect(screen.getByDisplayValue("/foo/bar")).toBeInTheDocument();
-    expect(screen.getByLabelText(/space indentation/i)).toHaveValue("4");
-  });
-
-  test("only updates the editor-facing indentation after the user saves", () => {
-    renderSettingsDialog();
-
-    fireEvent.click(screen.getByRole("button", { name: /open settings/i }));
+    fireEvent.click(screen.getByRole("button", { name: /settings/i }));
 
     const indentationSelect = screen.getByLabelText(/space indentation/i);
 
@@ -100,9 +193,9 @@ describe("Settings integration", () => {
   });
 
   test("discards an unsaved indentation change when the user cancels", () => {
-    renderSettingsDialog();
+    renderSettingsIntegration();
 
-    fireEvent.click(screen.getByRole("button", { name: /open settings/i }));
+    fireEvent.click(screen.getByRole("button", { name: /settings/i }));
 
     fireEvent.change(screen.getByLabelText(/space indentation/i), {
       target: { value: "4" },
@@ -114,7 +207,7 @@ describe("Settings integration", () => {
       "2"
     );
 
-    fireEvent.click(screen.getByRole("button", { name: /open settings/i }));
+    fireEvent.click(screen.getByRole("button", { name: /settings/i }));
 
     expect(screen.getByLabelText(/space indentation/i)).toHaveValue("2");
   });

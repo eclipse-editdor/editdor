@@ -1,3 +1,15 @@
+/********************************************************************************
+ * Copyright (c) 2026 Contributors to the Eclipse Foundation
+ *
+ * See the NOTICE file(s) distributed with this work for additional
+ * information regarding copyright ownership.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License v. 2.0 which is available at
+ * http://www.eclipse.org/legal/epl-2.0, or the W3C Software Notice and
+ *
+ * SPDX-License-Identifier: EPL-2.0 OR W3C-20150513
+ ********************************************************************************/
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import AppHeader from "../components/App/AppHeader";
@@ -63,23 +75,6 @@ vi.mock("../components/Dialogs/CreateTdDialog", async () => {
   });
 
   return { default: MockCreateTdDialog };
-});
-
-vi.mock("../components/Dialogs/SettingsDialog", async () => {
-  const React = await import("react");
-
-  const MockSettingsDialog = React.forwardRef((_props, ref) => {
-    const [opened, setOpened] = React.useState(false);
-
-    React.useImperativeHandle(ref, () => ({
-      openModal: () => setOpened(true),
-      close: () => setOpened(false),
-    }));
-
-    return opened ? <div>Settings Dialog</div> : null;
-  });
-
-  return { default: MockSettingsDialog };
 });
 
 vi.mock("../components/Dialogs/ShareDialog", async () => {
@@ -164,6 +159,10 @@ describe("Integration test on rendering elements, actions and errors", () => {
     mockedReadFromFile.mockReset();
     mockedSaveToFile.mockReset();
 
+    const modalRoot = document.createElement("div");
+    modalRoot.id = "modal-root";
+    document.body.appendChild(modalRoot);
+
     Object.defineProperty(window, "confirm", {
       configurable: true,
       writable: true,
@@ -180,6 +179,7 @@ describe("Integration test on rendering elements, actions and errors", () => {
   afterEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
+    document.getElementById("modal-root")?.remove();
   });
 
   test("on startup it renders the header and primary actions", () => {
@@ -267,11 +267,24 @@ describe("Integration test on rendering elements, actions and errors", () => {
   });
 
   test("shows the settings dialog when Settings is clicked", () => {
+    localStorage.setItem("northbound", "http://localhost:8080/");
+    localStorage.setItem("southbound", "http://localhost:9090/");
+    localStorage.setItem("valuePath", "/foo/bar");
+
     renderWithContext();
 
     fireEvent.click(screen.getByRole("button", { name: /settings/i }));
 
-    expect(screen.getByText("Settings Dialog")).toBeInTheDocument();
+    expect(
+      screen.getByText("Change the ediTDors configuration to your needs")
+    ).toBeInTheDocument();
+    expect(
+      screen.getByDisplayValue("http://localhost:8080/")
+    ).toBeInTheDocument();
+    expect(
+      screen.getByDisplayValue("http://localhost:9090/")
+    ).toBeInTheDocument();
+    expect(screen.getByDisplayValue("/foo/bar")).toBeInTheDocument();
   });
 
   test("shows an error when Send TD is clicked without a TD loaded", () => {
