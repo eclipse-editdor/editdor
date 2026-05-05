@@ -22,14 +22,11 @@ import React, {
 import ediTDorContext from "../../context/ediTDorContext";
 import { changeBetweenTd } from "../../utils/tdOperations";
 import { editor } from "monaco-editor";
-import { IValidationMessage } from "../../types/context";
 
 type SchemaMapMessage = Map<string, Record<string, unknown>>;
 
 // List of all Options can be found here: https://microsoft.github.io/monaco-editor/docs.html#interfaces/editor.IStandaloneEditorConstructionOptions.html
 
-// delay function that executes the callback once it hasn't been called for
-// at least x ms.
 let timeoutId: ReturnType<typeof setTimeout>;
 const delay = (fn: (text: string) => void, text: string, ms: number) => {
   clearTimeout(timeoutId);
@@ -38,16 +35,18 @@ const delay = (fn: (text: string) => void, text: string, ms: number) => {
 
 type JsonEditorProps = {
   editorRef?: React.MutableRefObject<editor.IStandaloneCodeEditor | null>;
+  jsonIndentation: 2 | 4;
 };
 interface JsonSchemaEntry {
   schemaUri: string;
   schema: Record<string, unknown>;
 }
 
-const JsonEditor: React.FC<JsonEditorProps> = ({ editorRef }) => {
+const JsonEditor: React.FC<JsonEditorProps> = ({
+  editorRef,
+  jsonIndentation,
+}) => {
   const context = useContext(ediTDorContext);
-
-  const jsonIndentation = context.jsonIndentation ?? 2;
   const [schemas] = useState<JsonSchemaEntry[]>([]);
   const [proxy, setProxy] = useState<any>(undefined);
   const editorInstance = useRef<editor.IStandaloneCodeEditor | null>(null);

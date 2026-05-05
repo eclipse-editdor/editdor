@@ -23,7 +23,6 @@ import {
   UPDATE_VALIDATION_MESSAGE,
   UPDATE_NORTHBOUND_CONNECTION,
   UPDATE_CONTRIBUTE_CATALOG,
-  UPDATE_JSON_INDENTATION,
 } from "./GlobalState";
 import type {
   ThingDescription,
@@ -71,8 +70,6 @@ export const editdorReducer = (
       return updateNorthboundConnection(action.northboundConnection, state);
     case UPDATE_CONTRIBUTE_CATALOG:
       return updateContributeCatalog(action.contributeCatalog, state);
-    case UPDATE_JSON_INDENTATION:
-      return updateJsonIndentationReducer(action.value, state);
     default:
       return state;
   }
@@ -369,13 +366,4 @@ const updateContributeCatalog = (
   state: EditorState
 ): EditorState => {
   return { ...state, contributeCatalog };
-};
-const updateJsonIndentationReducer = (
-  jsonIndentation: 2 | 4,
-  state: EditorState
-): EditorState => {
-  return {
-    ...state,
-    jsonIndentation,
-  };
 };

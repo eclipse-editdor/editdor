@@ -10,11 +10,10 @@
  *
  * SPDX-License-Identifier: EPL-2.0 OR W3C-20150513
  ********************************************************************************/
-import React, { useState, useEffect, useCallback, useContext } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import InfoIconWrapper from "../base/InfoIconWrapper";
 import TextField from "../base/TextField";
 import { isValidUrl } from "../../utils/strings";
-import EdiTDorContext from "../../context/ediTDorContext";
 import Dropdown from "../base/Dropdown";
 
 export interface SettingsData {
@@ -34,6 +33,8 @@ interface SettingsProps {
   onChange?: (data: SettingsData, isValid: boolean) => void;
   hideTitle?: boolean;
   className?: string;
+  jsonIndentation?: 2 | 4;
+  onJsonIndentationChange?: (value: 2 | 4) => void;
 }
 
 const Settings: React.FC<SettingsProps> = ({
@@ -45,8 +46,9 @@ const Settings: React.FC<SettingsProps> = ({
   onChange,
   hideTitle = false,
   className = "",
+  jsonIndentation,
+  onJsonIndentationChange,
 }) => {
-  const context = useContext(EdiTDorContext);
   const [data, setData] = useState<SettingsData>(initialData);
   const [errors, setErrors] = useState<SettingsErrors>({
     northboundUrl: "",
@@ -128,11 +130,15 @@ const Settings: React.FC<SettingsProps> = ({
 
   const handleJsonIndentationChange = useCallback(
     (e: React.ChangeEvent<HTMLSelectElement>) => {
+      if (!onJsonIndentationChange) {
+        return;
+      }
+
       const parsed = Number(e.target.value);
       const value: 2 | 4 = parsed === 4 ? 4 : 2;
-      context.updateJsonIndentation(value);
+      onJsonIndentationChange(value);
     },
-    [context]
+    [onJsonIndentationChange]
   );
 
   return (
@@ -143,7 +149,7 @@ const Settings: React.FC<SettingsProps> = ({
           <Dropdown
             id="json-indentation-select"
             label="Space indentation"
-            value={String(context.jsonIndentation)}
+            value={String(jsonIndentation)}
             onChange={handleJsonIndentationChange}
             options={["2", "4"]}
             className="w-full"

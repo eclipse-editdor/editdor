@@ -51,6 +51,7 @@ const App = () => {
   const context = useContext(ediTDorContext);
 
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
+  const [jsonIndentation, setJsonIndentation] = useState<2 | 4>(2);
   const [customBreakpointsState, setCustomBreakpointsState] = useState(0);
   const tdViewerRef = useRef<HTMLDivElement>(null);
   const [pendingTd, setPendingTd] = useState<string>("");
@@ -229,7 +230,10 @@ const App = () => {
 
   return (
     <main className="flex max-h-screen w-screen flex-col">
-      <AppHeader></AppHeader>
+      <AppHeader
+        jsonIndentation={jsonIndentation}
+        onJsonIndentationChange={setJsonIndentation}
+      ></AppHeader>
 
       <div className="">
         <Container className="height-adjust flex flex-col md:flex-row">
@@ -249,7 +253,10 @@ const App = () => {
           />
 
           <Section className="w-full md:w-5/12">
-            <JsonEditor editorRef={editorRef} />
+            <JsonEditor
+              editorRef={editorRef}
+              jsonIndentation={jsonIndentation}
+            />
           </Section>
         </Container>
       </div>

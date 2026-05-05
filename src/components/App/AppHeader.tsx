@@ -49,7 +49,15 @@ const INVALID_TYPE_MESSAGE =
 const VALIDATION_FAILED_MESSAGE =
   "The Thing Model did not pass the JSON schema validation Please make sure the Thing Model is valid according to the JSON schema before contributing it to the catalog.";
 
-const AppHeader: React.FC = () => {
+interface AppHeaderProps {
+  jsonIndentation: 2 | 4;
+  onJsonIndentationChange: (value: 2 | 4) => void;
+}
+
+const AppHeader: React.FC<AppHeaderProps> = ({
+  jsonIndentation,
+  onJsonIndentationChange,
+}) => {
   const context = useContext(ediTDorContext);
   const td: ThingDescription = context.parsedTD;
   /** States*/
@@ -109,9 +117,8 @@ const AppHeader: React.FC = () => {
       context.updateOfflineTD(res.td);
       context.updateIsModified(false);
 
-      context.setFileHandle(res.fileHandle || res.fileNname);
-      context.updateLinkedTd(undefined);
-      context.addLinkedTd(linkedTd);
+      context.setFileHandle(res.fileHandle || res.fileName);
+      context.updateLinkedTd(linkedTd);
     } catch (error) {
       const msg = "Opening a new TD was canceled or an error occured.";
       console.error(msg, error);
@@ -341,7 +348,11 @@ const AppHeader: React.FC = () => {
       <ConvertTmDialog ref={convertTmDialog} />
       <ShareDialog ref={shareDialog} />
       <CreateTdDialog ref={createTdDialog} />
-      <SettingsDialog ref={settingsDialog} />
+      <SettingsDialog
+        ref={settingsDialog}
+        jsonIndentation={jsonIndentation}
+        onJsonIndentationChange={onJsonIndentationChange}
+      />
       <ContributeToCatalog ref={contributeToCatalog} />
       <ErrorDialog
         isOpen={errorDisplay.state}

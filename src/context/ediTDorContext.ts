@@ -69,7 +69,6 @@ const defaultContext: IEdiTDorContext = {
     nameRepository: "",
     dynamicValues: {},
   },
-  jsonIndentation: 2,
 
   updateOfflineTD: () => {},
   updateIsModified: () => {},
@@ -83,7 +82,6 @@ const defaultContext: IEdiTDorContext = {
   updateValidationMessage: () => {},
   updateNorthboundConnection: () => {},
   updateContributeCatalog: () => {},
-  updateJsonIndentation: () => {},
 };
 
 const ediTDorContext = React.createContext<IEdiTDorContext>(defaultContext);
