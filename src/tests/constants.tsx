@@ -49,6 +49,64 @@ export const THING_DESCRIPTION_LAMP_V_STRING = JSON.stringify(
   2
 );
 
+export const THING_MODEL_WITH_MODBUS_JSON = {
+  "@context": ["https://www.w3.org/2022/wot/td/v1.1"],
+  "@type": "tm:ThingModel",
+  title: "Triple_FUSE",
+  id: "randomID01",
+  Description:
+    "Please update Powercenter and underlying devices to actual version!",
+  base: "modbus://{{IP}}:{{PORT}}",
+  securityDefinitions: {
+    nosec_sc: {
+      scheme: "nosec",
+    },
+  },
+  security: "nosec_sc",
+  "schema:license": "https://www.apache.org/licenses/LICENSE-2.0.txt",
+  "schema:copyrightYear": 2024,
+  "schema:copyrightHolder": {
+    "@type": "Organization",
+    name: "OrgName",
+  },
+
+  "schema:manufacturer": {
+    "schema:name": "OrgName",
+  },
+  "schema:mpn": "Triple_FUSE",
+  properties: {
+    IDENT_IM0_MANUFACTURER_ID: {
+      forms: [
+        {
+          op: ["readproperty"],
+          href: "/",
+          "modbus:unitID": "{{UNITID}}",
+          "modbus:quantity": 1,
+          "modbus:address": 2,
+          "modbus:type": "integer",
+          "modbus:entity": "HoldingRegister",
+          "modbus:zeroBasedAddressing": false,
+        },
+      ],
+      "cpcom:id": 2,
+      title: "Manufacturer ID",
+      titles: {
+        "en-US": "Manufacturer ID",
+        "de-DE": "Hersteller ID",
+        fr: "ID fabricant",
+      },
+      observable: false,
+      readOnly: true,
+      writeOnly: false,
+      type: "integer",
+      default: 42,
+    },
+  },
+  actions: {},
+  events: {},
+  links: [],
+};
+
 export const createContextValue = (
   overrides: Partial<IEdiTDorContext> = {}
 ): IEdiTDorContext => ({

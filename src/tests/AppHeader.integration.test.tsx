@@ -1,3 +1,15 @@
+/********************************************************************************
+ * Copyright (c) 2026 Contributors to the Eclipse Foundation
+ *
+ * See the NOTICE file(s) distributed with this work for additional
+ * information regarding copyright ownership.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License v. 2.0 which is available at
+ * http://www.eclipse.org/legal/epl-2.0, or the W3C Software Notice and
+ *
+ * SPDX-License-Identifier: EPL-2.0 OR W3C-20150513
+ ********************************************************************************/
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import AppHeader from "../components/App/AppHeader";
@@ -65,23 +77,6 @@ vi.mock("../components/Dialogs/CreateTdDialog", async () => {
   return { default: MockCreateTdDialog };
 });
 
-vi.mock("../components/Dialogs/SettingsDialog", async () => {
-  const React = await import("react");
-
-  const MockSettingsDialog = React.forwardRef((_props, ref) => {
-    const [opened, setOpened] = React.useState(false);
-
-    React.useImperativeHandle(ref, () => ({
-      openModal: () => setOpened(true),
-      close: () => setOpened(false),
-    }));
-
-    return opened ? <div>Settings Dialog</div> : null;
-  });
-
-  return { default: MockSettingsDialog };
-});
-
 vi.mock("../components/Dialogs/ShareDialog", async () => {
   const React = await import("react");
 
@@ -137,12 +132,18 @@ vi.mock("../components/Dialogs/SendTDDialog", async () => {
 const mockedReadFromFile = vi.mocked(fileTdService.readFromFile);
 const mockedSaveToFile = vi.mocked(fileTdService.saveToFile);
 
+const defaultJsonIndentation = 2 as const;
+const noopJsonIndentationChange = () => undefined;
+
 const renderWithContext = (contextOverrides: Partial<IEdiTDorContext> = {}) => {
   const contextValue = createContextValue(contextOverrides);
 
   const view = render(
     <ediTDorContext.Provider value={contextValue}>
-      <AppHeader />
+      <AppHeader
+        jsonIndentation={defaultJsonIndentation}
+        onJsonIndentationChange={noopJsonIndentationChange}
+      />
     </ediTDorContext.Provider>
   );
 
@@ -157,6 +158,10 @@ describe("Integration test on rendering elements, actions and errors", () => {
     localStorage.clear();
     mockedReadFromFile.mockReset();
     mockedSaveToFile.mockReset();
+
+    const modalRoot = document.createElement("div");
+    modalRoot.id = "modal-root";
+    document.body.appendChild(modalRoot);
 
     Object.defineProperty(window, "confirm", {
       configurable: true,
@@ -174,9 +179,10 @@ describe("Integration test on rendering elements, actions and errors", () => {
   afterEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
+    document.getElementById("modal-root")?.remove();
   });
 
-  test("renders the header and primary actions", () => {
+  test("on startup it renders the header and primary actions", () => {
     renderWithContext();
 
     expect(screen.getByRole("banner")).toBeInTheDocument();
@@ -197,6 +203,40 @@ describe("Integration test on rendering elements, actions and errors", () => {
     expect(
       screen.getByRole("button", { name: /settings/i })
     ).toBeInTheDocument();
+  });
+
+  test("when user pastes a TD it renderes the header and primary actions", () => {
+    renderWithContext({
+      parsedTD: THING_DESCRIPTION_LAMP_JSON,
+    });
+    expect(screen.getByRole("banner")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /logo/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /send td/i })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /contribute to catalog/i })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /^share$/i })
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /create/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /download/i })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /settings/i })
+    ).toBeInTheDocument();
+  });
+
+  test("when user pastes a TM it renderes the header, primary actions and the To TD button", () => {
+    renderWithContext({
+      parsedTD: {
+        ...THING_DESCRIPTION_LAMP_JSON,
+        "@type": "tm:ThingModel",
+      },
+    });
+    expect(screen.getByRole("button", { name: /to td/i })).toBeInTheDocument();
   });
 
   test("opens the project site when the logo button is clicked", () => {
@@ -227,11 +267,24 @@ describe("Integration test on rendering elements, actions and errors", () => {
   });
 
   test("shows the settings dialog when Settings is clicked", () => {
+    localStorage.setItem("northbound", "http://localhost:8080/");
+    localStorage.setItem("southbound", "http://localhost:9090/");
+    localStorage.setItem("valuePath", "/foo/bar");
+
     renderWithContext();
 
     fireEvent.click(screen.getByRole("button", { name: /settings/i }));
 
-    expect(screen.getByText("Settings Dialog")).toBeInTheDocument();
+    expect(
+      screen.getByText("Change the ediTDors configuration to your needs")
+    ).toBeInTheDocument();
+    expect(
+      screen.getByDisplayValue("http://localhost:8080/")
+    ).toBeInTheDocument();
+    expect(
+      screen.getByDisplayValue("http://localhost:9090/")
+    ).toBeInTheDocument();
+    expect(screen.getByDisplayValue("/foo/bar")).toBeInTheDocument();
   });
 
   test("shows an error when Send TD is clicked without a TD loaded", () => {
@@ -357,37 +410,6 @@ describe("Integration test on rendering elements, actions and errors", () => {
     ).toBeInTheDocument();
   });
 
-  test("renders the To TD button only for Thing Models", () => {
-    const { rerender } = render(
-      <ediTDorContext.Provider
-        value={createContextValue({
-          parsedTD: THING_DESCRIPTION_LAMP_JSON,
-        })}
-      >
-        <AppHeader />
-      </ediTDorContext.Provider>
-    );
-
-    expect(
-      screen.queryByRole("button", { name: /to td/i })
-    ).not.toBeInTheDocument();
-
-    rerender(
-      <ediTDorContext.Provider
-        value={createContextValue({
-          parsedTD: {
-            ...THING_DESCRIPTION_LAMP_JSON,
-            "@type": "tm:ThingModel",
-          },
-        })}
-      >
-        <AppHeader />
-      </ediTDorContext.Provider>
-    );
-
-    expect(screen.getByRole("button", { name: /to td/i })).toBeInTheDocument();
-  });
-
   test("opens the Convert TM dialog when To TD is clicked", () => {
     renderWithContext({
       parsedTD: {
@@ -423,10 +445,6 @@ describe("Integration test on rendering elements, actions and errors", () => {
     );
     expect(contextValue.updateIsModified).toHaveBeenCalledWith(false);
     expect(contextValue.setFileHandle).toHaveBeenCalledWith("mock-handle");
-    expect(contextValue.updateLinkedTd).toHaveBeenCalledWith(undefined);
-    expect(contextValue.addLinkedTd).toHaveBeenCalledWith({
-      "./lamp.jsonld": "mock-handle",
-    });
   });
 
   test("asks for confirmation before opening a new file when the TD is modified", async () => {

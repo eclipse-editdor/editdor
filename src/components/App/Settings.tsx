@@ -14,6 +14,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import InfoIconWrapper from "../base/InfoIconWrapper";
 import TextField from "../base/TextField";
 import { isValidUrl } from "../../utils/strings";
+import Dropdown from "../base/Dropdown";
 
 export interface SettingsData {
   northboundUrl: string;
@@ -32,6 +33,8 @@ interface SettingsProps {
   onChange?: (data: SettingsData, isValid: boolean) => void;
   hideTitle?: boolean;
   className?: string;
+  jsonIndentation?: 2 | 4;
+  onJsonIndentationChange?: (value: 2 | 4) => void;
 }
 
 const Settings: React.FC<SettingsProps> = ({
@@ -43,6 +46,8 @@ const Settings: React.FC<SettingsProps> = ({
   onChange,
   hideTitle = false,
   className = "",
+  jsonIndentation,
+  onJsonIndentationChange,
 }) => {
   const [data, setData] = useState<SettingsData>(initialData);
   const [errors, setErrors] = useState<SettingsErrors>({
@@ -50,10 +55,6 @@ const Settings: React.FC<SettingsProps> = ({
     southboundUrl: "",
     pathToValue: "",
   });
-
-  useEffect(() => {
-    setData(initialData);
-  }, [initialData]);
 
   useEffect(() => {
     if (onChange) {
@@ -127,8 +128,35 @@ const Settings: React.FC<SettingsProps> = ({
     []
   );
 
+  const handleJsonIndentationChange = useCallback(
+    (e: React.ChangeEvent<HTMLSelectElement>) => {
+      if (!onJsonIndentationChange) {
+        return;
+      }
+
+      const parsed = Number(e.target.value);
+      const value: 2 | 4 = parsed === 4 ? 4 : 2;
+      onJsonIndentationChange(value);
+    },
+    [onJsonIndentationChange]
+  );
+
   return (
     <div className={className}>
+      <div className="my-4 rounded-md bg-black bg-opacity-80 p-2">
+        {!hideTitle && <h1 className="font-bold">JSON Editor</h1>}
+        <div className="px-4">
+          <Dropdown
+            id="json-indentation-select"
+            label="Space indentation"
+            value={String(jsonIndentation)}
+            onChange={handleJsonIndentationChange}
+            options={["2", "4"]}
+            className="w-full"
+          />
+        </div>
+      </div>
+
       <div className="rounded-md bg-black bg-opacity-80 p-2">
         {!hideTitle && (
           <h1 className="font-bold">Third Party Service Configuration</h1>
