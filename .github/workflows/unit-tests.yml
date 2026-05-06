@@ -9,10 +9,54 @@ on:
 jobs:
   run-unit-tests:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-node@v2
         with:
           node-version: "20"
       - run: yarn install
-      - run: yarn test
+      - run: yarn test:coverage
+      - name: Add coverage summary
+        if: always()
+        run: |
+          node <<'EOF'
+          const fs = require("fs");
+
+          const summaryPath = "coverage/coverage-summary.json";
+
+          if (!fs.existsSync(summaryPath)) {
+            fs.appendFileSync(
+              process.env.GITHUB_STEP_SUMMARY,
+              "## Coverage Summary\n\nCoverage summary was not generated.\n"
+            );
+            process.exit(0);
+          }
+
+          const summary = JSON.parse(fs.readFileSync(summaryPath, "utf8")).total;
+          const metrics = [
+            ["Lines", summary.lines.pct],
+            ["Statements", summary.statements.pct],
+            ["Functions", summary.functions.pct],
+            ["Branches", summary.branches.pct],
+          ];
+
+          const output = [
+            "## Coverage Summary",
+            "",
+            "| Metric | Coverage |",
+            "| --- | ---: |",
+            ...metrics.map(([label, value]) => `| ${label} | ${Number(value).toFixed(1)}% |`),
+            "",
+          ].join("\n");
+
+          fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, output);
+          EOF
+      - name: Upload coverage to Codecov
+        if: always()
+        uses: codecov/codecov-action@v5
+        with:
+          files: ./coverage/lcov.info
+          fail_ci_if_error: false
+          verbose: true

@@ -1,5 +1,6 @@
 ![alt text](https://github.com/eclipse-editdor/editdor/blob/master/logo/1585_ediTDor_logo.png "ediTDor logo")
 [![Discord](https://img.shields.io/badge/Discord-7289DA?logo=discord&logoColor=white&label=WoT-CG-Discord)](https://discord.com/channels/1081253871688622181/1359286591100817549)
+[![Coverage](https://codecov.io/gh/eclipse-editdor/editdor/graph/badge.svg?branch=master)](https://codecov.io/gh/eclipse-editdor/editdor)
 
 A tool for simply designing W3C Thing Descriptions and Thing Models
 
