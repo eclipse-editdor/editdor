@@ -2,8 +2,25 @@
 
 Any contribution to this project is welcome.
 If you want to report a bug or question, please check the [issue list](https://github.com/eclipse-editdor/editdor/issues) or create a new issue.
+
 If you want to contribute to this project by coding, please fork the repository and then follow the general contribution guidelines described [here](https://github.com/firstcontributions/first-contributions/blob/master/README.md).
-However, EdiTDor is an [Eclipse IoT](https://iot.eclipse.org) project and as such is governed by the Eclipse Development process.
+
+The follow extended contribution guidelines also applies:
+
+- Maximum of one **open** pull request per contributer at a given time.
+- Maximum of one **open** issue assign per contributer at a given time.
+- If an exception is necessary regarding the previous statements, contact the maintainer.
+- The use of AI and related tools is permitted. To increase the accuracy of these tools use the files provided in the `.github/instructions` folder and the `copilot-instructions.md` file. However, the following policy is mandatory:
+
+      1. As a contributor, you are responsible for the code you submit, whether you use AI tools or write it yourself. Some AI tools offer settings, features, or modes that can help, but these are no substitute for your own review of code quality, correctness, style, security, and licensing.
+
+      2. With all AI tools, contributors should be mindful of their limitations. Carefully review any suggested or generated code or comments to ensure nothing is inherently harmful, malicious, or outright incorrect.
+
+      3. By contributing you are indicating you have the permission and rights to submit the content to a project, so take care in checking that the output of the tool is compatible with the project’s license. The “Signed-Off-By” label in your contribution is a statement that you take responsibility for the entire contents of the commit, including any parts that were generated or assisted by AI tools or other tools
+
+      4. This policy does not supersede any project specific requirements around actions to be taken prior to the submission of changes into review
+
+EdiTDor is an [Eclipse IoT](https://iot.eclipse.org) project and as such is governed by the Eclipse Development process.
 This process helps us in creating great open source software within a safe legal framework.
 
 Thus, before your contribution can be accepted by the project team, contributors must electronically sign the [Eclipse Contributor Agreement (ECA)](http://www.eclipse.org/legal/ECA.php) and follow these preliminary steps:

@@ -21,68 +21,85 @@ export interface SettingsDialogRef {
   close: () => void;
 }
 
-const SettingsDialog = forwardRef<SettingsDialogRef>((_, ref) => {
-  const [display, setDisplay] = useState<boolean>(false);
-  const [settingsData, setSettingsData] = useState<SettingsData>({
-    northboundUrl: "",
-    southboundUrl: "",
-    pathToValue: "/",
-  });
-  const [isValid, setIsValid] = useState(true);
+interface SettingsDialogProps {
+  jsonIndentation: 2 | 4;
+  onJsonIndentationChange: (value: 2 | 4) => void;
+}
 
-  useImperativeHandle(ref, () => {
-    return {
-      openModal: () => open(),
-      close: () => close(),
-    };
-  });
-
-  const open = () => {
-    setDisplay(true);
-    setSettingsData({
-      northboundUrl: getLocalStorage("northbound") || "",
-      southboundUrl: getLocalStorage("southbound") || "",
-      pathToValue: getLocalStorage("valuePath") || "/",
+const SettingsDialog = forwardRef<SettingsDialogRef, SettingsDialogProps>(
+  ({ jsonIndentation, onJsonIndentationChange }, ref) => {
+    const [display, setDisplay] = useState<boolean>(false);
+    const [settingsData, setSettingsData] = useState<SettingsData>({
+      northboundUrl: "",
+      southboundUrl: "",
+      pathToValue: "/",
     });
-  };
-
-  const close = async () => {
-    setDisplay(false);
-  };
-
-  const handleSubmit = () => {
-    if (isValid) {
-      setLocalStorage(settingsData.northboundUrl, "northbound");
-      setLocalStorage(settingsData.southboundUrl, "southbound");
-      setLocalStorage(settingsData.pathToValue, "valuePath");
-      close();
-    }
-  };
-
-  const handleSettingsChange = (data: SettingsData, valid: boolean) => {
-    setSettingsData(data);
-    setIsValid(valid);
-  };
-
-  if (display) {
-    return ReactDOM.createPortal(
-      <DialogTemplate
-        hasSubmit={true}
-        onHandleEventLeftButton={close}
-        leftButton={"Cancel"}
-        rightButton={"Save Changes"}
-        onHandleEventRightButton={handleSubmit}
-        title={"Settings"}
-        description={"Change the ediTDors configuration to your needs"}
-      >
-        <Settings initialData={settingsData} onChange={handleSettingsChange} />
-      </DialogTemplate>,
-      document.getElementById("modal-root") as HTMLElement
+    const [draftJsonIndentation, setDraftJsonIndentation] = useState<2 | 4>(
+      jsonIndentation
     );
-  }
+    const [isValid, setIsValid] = useState(true);
 
-  return null;
-});
+    useImperativeHandle(ref, () => {
+      return {
+        openModal: () => open(),
+        close: () => close(),
+      };
+    });
+
+    const open = () => {
+      setDisplay(true);
+      setSettingsData({
+        northboundUrl: getLocalStorage("northbound") || "",
+        southboundUrl: getLocalStorage("southbound") || "",
+        pathToValue: getLocalStorage("valuePath") || "/",
+      });
+      setDraftJsonIndentation(jsonIndentation);
+    };
+
+    const close = async () => {
+      setDisplay(false);
+    };
+
+    const handleSubmit = () => {
+      if (isValid) {
+        setLocalStorage(settingsData.northboundUrl, "northbound");
+        setLocalStorage(settingsData.southboundUrl, "southbound");
+        setLocalStorage(settingsData.pathToValue, "valuePath");
+        onJsonIndentationChange(draftJsonIndentation);
+        close();
+      }
+    };
+
+    const handleSettingsChange = (data: SettingsData, valid: boolean) => {
+      setSettingsData(data);
+      setIsValid(valid);
+    };
+
+    if (display) {
+      return ReactDOM.createPortal(
+        <DialogTemplate
+          hasSubmit={true}
+          onHandleEventLeftButton={close}
+          leftButton={"Cancel"}
+          rightButton={"Save Changes"}
+          onHandleEventRightButton={handleSubmit}
+          title={"Settings"}
+          description={"Change the ediTDors configuration to your needs"}
+        >
+          <Settings
+            initialData={settingsData}
+            onChange={handleSettingsChange}
+            jsonIndentation={draftJsonIndentation}
+            onJsonIndentationChange={setDraftJsonIndentation}
+          />
+        </DialogTemplate>,
+        document.getElementById("modal-root") as HTMLElement
+      );
+    }
+
+    return null;
+  }
+);
 
 SettingsDialog.displayName = "SettingsDialog";
 export default SettingsDialog;

@@ -9,7 +9,7 @@
  * http://www.eclipse.org/legal/epl-2.0, or the W3C Software Notice and
  *
  * SPDX-License-Identifier: EPL-2.0 OR W3C-20150513
- ********************************************************************************/ ß;
+ ********************************************************************************/
 import { ThingDescription } from "wot-thing-description-types";
 
 type ServientCallback = (
@@ -26,14 +26,31 @@ export interface IFormConfigurations {
   callback: ServientCallback | null;
 }
 
-interface IFormProps {
+export interface IInteractionForm {
   href: string;
-  op: string | string[];
-  propName: string;
-  actualIndex: number;
+  op?: string | string[];
+  contentType?: string;
+  [key: string]: unknown;
 }
 
-type OpKeys =
+export interface IExplicitForm extends IInteractionForm {
+  op: string | string[];
+}
+
+export interface IInteractionAffordance {
+  title?: string;
+  description?: string;
+  type?: string;
+  forms?: IInteractionForm[];
+  [key: string]: unknown;
+}
+
+export type IFormProps = IInteractionForm & {
+  actualIndex: number;
+  [key: string]: unknown;
+};
+
+export type OpKeys =
   | "readproperty"
   | "writeproperty"
   | "observeproperty"
