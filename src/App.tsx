@@ -161,7 +161,7 @@ const App: React.FC = () => {
 
     resizeObserver.observe(tdViewerRef.current);
     return () => resizeObserver.disconnect();
-  }, []);
+  }, [containerKey]);
 
   return (
     <main className="flex max-h-screen w-screen flex-col">
@@ -174,9 +174,8 @@ const App: React.FC = () => {
         >
           <Section
             minSize={550}
-            className={`w-full min-w-16 ${
-              doShowJSON ? "md:w-7/12" : "md:w-full"
-            }`}
+            className={`w-full min-w-16 ${doShowJSON ? "md:w-7/12" : "md:w-full"
+              }`}
           >
             <div ref={tdViewerRef} className="h-full w-full">
               <TDViewer
@@ -191,15 +190,13 @@ const App: React.FC = () => {
             <>
               <Bar
                 size={doShowJSON ? 7.5 : 0}
-                className={`cursor-col-resize bg-gray-300 hover:bg-blue-500 ${
-                  doShowJSON ? "" : "hidden"
-                }`}
+                className={`cursor-col-resize bg-gray-300 hover:bg-blue-500 ${doShowJSON ? "" : "hidden"
+                  }`}
               />
 
               <Section
-                className={`w-full ${
-                  doShowJSON ? "md:w-5/12" : "md:w-0"
-                } overflow-hidden`}
+                className={`w-full ${doShowJSON ? "md:w-5/12" : "md:w-0"
+                  } overflow-hidden`}
               >
                 {doShowJSON && <JsonEditor editorRef={editorRef} />}
               </Section>
