@@ -237,6 +237,37 @@ const JsonEditor: React.FC<JsonEditorProps> = ({
     }
   }, [context.linkedTd, context.offlineTD]);
 
+  useEffect(() => {
+    const currentEditor = editorInstance.current;
+    if (!currentEditor) {
+      return;
+    }
+
+    const currentValue = currentEditor.getValue();
+    if (!currentValue) {
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(currentValue);
+      const formatted = JSON.stringify(parsed, null, jsonIndentation);
+
+      if (formatted === currentValue) {
+        return;
+      }
+
+      const viewState = currentEditor.saveViewState();
+      setLocalTextState(formatted);
+      context.updateOfflineTD(formatted);
+
+      if (viewState) {
+        setTimeout(() => {
+          editorInstance.current?.restoreViewState(viewState);
+        }, 0);
+      }
+    } catch {}
+  }, [jsonIndentation]);
+
   const changeLinkedTd = async () => {
     let href = (document.getElementById("linkedTd") as HTMLSelectElement).value;
     changeBetweenTd(context, href);
