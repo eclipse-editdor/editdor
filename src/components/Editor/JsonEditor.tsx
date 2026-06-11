@@ -25,14 +25,6 @@ import { editor } from "monaco-editor";
 
 type SchemaMapMessage = Map<string, Record<string, unknown>>;
 
-// List of all Options can be found here: https://microsoft.github.io/monaco-editor/docs.html#interfaces/editor.IStandaloneEditorConstructionOptions.html
-
-let timeoutId: ReturnType<typeof setTimeout>;
-const delay = (fn: (text: string) => void, text: string, ms: number) => {
-  clearTimeout(timeoutId);
-  timeoutId = setTimeout(() => fn(text), ms);
-};
-
 type JsonEditorProps = {
   editorRef?: React.MutableRefObject<editor.IStandaloneCodeEditor | null>;
   jsonIndentation: 2 | 4;
@@ -41,6 +33,12 @@ interface JsonSchemaEntry {
   schemaUri: string;
   schema: Record<string, unknown>;
 }
+
+let timeoutId: ReturnType<typeof setTimeout>;
+const delay = (fn: (text: string) => void, text: string, ms: number) => {
+  clearTimeout(timeoutId);
+  timeoutId = setTimeout(() => fn(text), ms);
+};
 
 const JsonEditor: React.FC<JsonEditorProps> = ({
   editorRef,
@@ -240,17 +238,35 @@ const JsonEditor: React.FC<JsonEditorProps> = ({
   }, [context.linkedTd, context.offlineTD]);
 
   useEffect(() => {
+    const currentEditor = editorInstance.current;
+    if (!currentEditor) {
+      return;
+    }
+
+    const currentValue = currentEditor.getValue();
+    if (!currentValue) {
+      return;
+    }
+
     try {
-      const parsed = JSON.parse(context.offlineTD);
+      const parsed = JSON.parse(currentValue);
       const formatted = JSON.stringify(parsed, null, jsonIndentation);
 
-      if (formatted !== context.offlineTD) {
-        context.updateOfflineTD(formatted);
+      if (formatted === currentValue) {
+        return;
       }
-    } catch {
-      // ignore invalid JSON
-    }
-  }, [jsonIndentation, context.offlineTD]);
+
+      const viewState = currentEditor.saveViewState();
+      setLocalTextState(formatted);
+      context.updateOfflineTD(formatted);
+
+      if (viewState) {
+        setTimeout(() => {
+          editorInstance.current?.restoreViewState(viewState);
+        }, 0);
+      }
+    } catch {}
+  }, [jsonIndentation]);
 
   const changeLinkedTd = async () => {
     let href = (document.getElementById("linkedTd") as HTMLSelectElement).value;
