@@ -22,6 +22,7 @@ import { DataSchemaType } from "wot-thing-description-types";
 
 const servient = new Core.Servient();
 servient.addClientFactory(new Http.HttpClientFactory());
+servient.addClientFactory(new Http.HttpsClientFactory());
 console.log("init servient");
 
 const formConfigurations: Record<string, IFormConfigurations> = {
