@@ -25,14 +25,6 @@ import { editor } from "monaco-editor";
 
 type SchemaMapMessage = Map<string, Record<string, unknown>>;
 
-// List of all Options can be found here: https://microsoft.github.io/monaco-editor/docs.html#interfaces/editor.IStandaloneEditorConstructionOptions.html
-
-let timeoutId: ReturnType<typeof setTimeout>;
-const delay = (fn: (text: string) => void, text: string, ms: number) => {
-  clearTimeout(timeoutId);
-  timeoutId = setTimeout(() => fn(text), ms);
-};
-
 type JsonEditorProps = {
   editorRef?: React.MutableRefObject<editor.IStandaloneCodeEditor | null>;
   jsonIndentation: 2 | 4;
@@ -41,6 +33,12 @@ interface JsonSchemaEntry {
   schemaUri: string;
   schema: Record<string, unknown>;
 }
+
+let timeoutId: ReturnType<typeof setTimeout>;
+const delay = (fn: (text: string) => void, text: string, ms: number) => {
+  clearTimeout(timeoutId);
+  timeoutId = setTimeout(() => fn(text), ms);
+};
 
 const JsonEditor: React.FC<JsonEditorProps> = ({
   editorRef,
@@ -238,19 +236,6 @@ const JsonEditor: React.FC<JsonEditorProps> = ({
       console.debug(err);
     }
   }, [context.linkedTd, context.offlineTD]);
-
-  useEffect(() => {
-    try {
-      const parsed = JSON.parse(context.offlineTD);
-      const formatted = JSON.stringify(parsed, null, jsonIndentation);
-
-      if (formatted !== context.offlineTD) {
-        context.updateOfflineTD(formatted);
-      }
-    } catch {
-      // ignore invalid JSON
-    }
-  }, [jsonIndentation, context.offlineTD]);
 
   const changeLinkedTd = async () => {
     let href = (document.getElementById("linkedTd") as HTMLSelectElement).value;
