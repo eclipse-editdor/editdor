@@ -23,9 +23,9 @@ import { isThingModel } from "../utils/tdOperations";
 let lastSentSchemaMap = new Map();
 
 const tdSchema =
-  "https://raw.githubusercontent.com/thingweb/thingweb-playground/%40thing-description-playground/web%401.0.0/packages/playground-core/td-schema.json";
+  "https://raw.githubusercontent.com/w3c/wot-resources/refs/heads/main/td/v1.1/validation/td-json-schema-validation.json";
 const tmSchema =
-  "https://raw.githubusercontent.com/w3c/wot-thing-description/main/validation/tm-json-schema-validation.json";
+  "https://raw.githubusercontent.com/w3c/wot-resources/refs/heads/main/td/v1.1/validation/tm-json-schema-validation.json";
 
 self.onmessage = async (message) => {
   // Check that prevents messages sent from webpack and react scripts to be executed.
