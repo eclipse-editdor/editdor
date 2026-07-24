@@ -21,6 +21,7 @@ vi.mock("@node-wot/browser-bundle", () => ({
   },
   Http: {
     HttpClientFactory: vi.fn(),
+    HttpsClientFactory: vi.fn(),
   },
 }));
 
