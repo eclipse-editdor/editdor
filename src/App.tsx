@@ -25,7 +25,7 @@ import ErrorDialog from "./components/Dialogs/ErrorDialog";
 import DialogTemplate from "./components/Dialogs/DialogTemplate";
 
 type ReadyMessage = {
-  type: "EDITDOR_READY";
+  type: "APPLICATION_READY";
 };
 
 type LoadTdMessage = {
@@ -184,7 +184,7 @@ const App = () => {
 
   useEffect(() => {
     const readyMessage: ReadyMessage = {
-      type: "EDITDOR_READY",
+      type: "APPLICATION_READY",
     };
 
     const handleMessage = (event: MessageEvent) => {

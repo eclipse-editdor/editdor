@@ -154,7 +154,7 @@ Example of use:
 The ediTDor can receive a Thing Description from another web application through the browser `postMessage` API (Documentation [here](https://developer.mozilla.org/en-US/docs/Web/API/Window/postMessage)). When ediTDor is opened by another application in a new window or tab, it sends a readiness message back to the opener:
 
 ```json
-{ "type": "EDITDOR_READY" }
+{ "type": "APPLICATION_READY" }
 ```
 
 After that, the parent application can send a Thing Description to ediTDor with a message in the following format:

@@ -401,7 +401,7 @@ describe("App component receive message from other application", () => {
 
     expect(openerRef.postMessage).toHaveBeenCalledWith(
       {
-        type: "EDITDOR_READY",
+        type: "APPLICATION_READY",
       },
       "*"
     );
